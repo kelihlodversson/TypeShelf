@@ -3,6 +3,7 @@
 #include "layout/layout.h"
 #include "ui/app.h"
 #include "ui/command.h"
+#include "ui/icons.h"
 #include "ui/menu.h"
 #include "ui/window.h"
 
@@ -223,15 +224,22 @@ int app_run(short vh, const FontList *fonts, const char *about)
     app.env.desk.w = desk.g_w;
     app.env.desk.h = desk.g_h;
 
-    app.menu = menu_create(desk.g_w / cw, (desk.g_y + desk.g_h) / ch);
-    if (app.menu == NULL)
+    if (icons_load() != 0) {
+        form_alert(1, "[3][Type Shelf|Cannot find TYPESHLF.RSC.][OK]");
         return -1;
+    }
+    app.menu = menu_create(desk.g_w / cw, (desk.g_y + desk.g_h) / ch);
+    if (app.menu == NULL) {
+        icons_free();
+        return -1;
+    }
     graf_mouse(ARROW, NULL);
     menu_bar(app.menu, 1);
     new_window(&app);
     if (app.windows == NULL) {
         menu_bar(app.menu, 0);
         menu_destroy(app.menu);
+        icons_free();
         return -1;
     }
 
@@ -256,5 +264,6 @@ int app_run(short vh, const FontList *fonts, const char *about)
         close_window(&app, app.windows);
     menu_bar(app.menu, 0);
     menu_destroy(app.menu);
+    icons_free();
     return 0;
 }

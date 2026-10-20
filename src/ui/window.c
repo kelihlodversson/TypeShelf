@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "layout/layout.h"
-#include "ui/glyphs.h"
+#include "ui/icons.h"
 #include "ui/window.h"
 
 #define WINDOW_PARTS    (NAME | CLOSER | FULLER | MOVER | SIZER | UPARROW | DNARROW | VSLIDE)
@@ -146,36 +146,8 @@ static void box(short vh, const Rect *r, int fill_color, int outline)
     v_pline(vh, 5, line);
 }
 
-static void draw_glyph(short vh, GlyphId id, int size, int x, int y, int ink)
-{
-    unsigned short words[16];
-    const char *const *rows = glyph_rows(id, size);
-    short pxy[8];
-    short colors[2];
-    MFDB src, dst;
-
-    if (rows == NULL || glyph_pack(rows, size, words) != 0)
-        return;
-    memset(&src, 0, sizeof src);
-    memset(&dst, 0, sizeof dst);
-    src.fd_addr = words;
-    src.fd_w = (short)size;
-    src.fd_h = (short)size;
-    src.fd_wdwidth = 1;
-    src.fd_stand = 1;
-    src.fd_nplanes = 1;
-    pxy[0] = 0;
-    pxy[1] = 0;
-    pxy[2] = (short)(size - 1);
-    pxy[3] = (short)(size - 1);
-    pxy[4] = (short)x;
-    pxy[5] = (short)y;
-    pxy[6] = (short)(x + size - 1);
-    pxy[7] = (short)(y + size - 1);
-    colors[0] = (short)ink;     /* set pixels */
-    colors[1] = 0;
-    vrt_cpyfm(vh, MD_TRANS, pxy, &src, &dst, colors);
-}
+/* the part of the window being drawn: the AES draws the icons on its own workstation */
+static Rect drawing_clip;
 
 static void text_at(short vh, int x, int y, const char *s)
 {
@@ -184,7 +156,7 @@ static void text_at(short vh, int x, int y, const char *s)
 }
 
 /* a button, drawn inverted when it is the view in use */
-static void draw_button(const UiEnv *env, const Window *w, ToolbarItem item, GlyphId glyph, int on)
+static void draw_button(const UiEnv *env, const Window *w, ToolbarItem item, IconId icon, int on)
 {
     Rect r = w->tb.rect[item];
     Rect work = window_work(w);
@@ -192,8 +164,8 @@ static void draw_button(const UiEnv *env, const Window *w, ToolbarItem item, Gly
 
     r.x += work.x;
     r.y += work.y;
-    box(env->vh, &r, on ? 1 : 0, 1);
-    draw_glyph(env->vh, glyph, size, r.x + (r.w - size) / 2, r.y + (r.h - size) / 2, on ? 0 : 1);
+    box(env->vh, &r, 0, 1);
+    icons_draw(icon, size, r.x + (r.w - size) / 2, r.y + (r.h - size) / 2, on, &drawing_clip);
 }
 
 static void draw_style_pulldown(const UiEnv *env, const Window *w)
@@ -250,18 +222,18 @@ static void draw_toolbar(const UiEnv *env, const Window *w)
     v_pline(env->vh, 2, line);
 
     if (tl->present[TB_BACK])
-        draw_button(env, w, TB_BACK, GLYPH_BACK, 0);
+        draw_button(env, w, TB_BACK, ICON_BACK, 0);
     if (tl->present[TB_STYLE])
         draw_style_pulldown(env, w);
     if (tl->present[TB_VIEW1])
         draw_button(env, w, TB_VIEW1,
-                    ws->mode == MODE_SINGLE ? GLYPH_SPECIMEN : GLYPH_ICONS,
+                    ws->mode == MODE_SINGLE ? ICON_SPECIMEN : ICON_ICONS,
                     ws->view == VIEW_ICONS || ws->view == VIEW_SPECIMEN);
     if (tl->present[TB_VIEW2])
-        draw_button(env, w, TB_VIEW2, GLYPH_SAMPLES,
+        draw_button(env, w, TB_VIEW2, ICON_SAMPLES,
                     ws->view == VIEW_SAMPLES || ws->view == VIEW_FAMILY_SAMPLES);
     if (tl->present[TB_VIEW3])
-        draw_button(env, w, TB_VIEW3, GLYPH_LIST, ws->view == VIEW_LIST);
+        draw_button(env, w, TB_VIEW3, ICON_LIST, ws->view == VIEW_LIST);
     if (tl->present[TB_SLIDER])
         draw_slider(env, w);
 }
@@ -306,6 +278,7 @@ void window_draw(const UiEnv *env, Window *w, const Rect *area)
         r = from_grect(&g);
         if (rect_intersect(&r, area, &clip)) {
             clip_to(vh, &clip);
+            drawing_clip = clip;
             draw_toolbar(env, w);
             draw_content(env, w);
         }

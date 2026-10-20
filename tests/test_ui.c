@@ -1,7 +1,6 @@
 #include "test.h"
 #include "layout/layout.h"
 #include "ui/command.h"
-#include "ui/glyphs.h"
 #include "ui/rect.h"
 #include "ui/toolbar_layout.h"
 #include "ui/winstate.h"
@@ -159,49 +158,10 @@ static void test_toolbar(void)
     CHECK(!tl.present[TB_SLIDER]);
 }
 
-static void test_glyphs(void)
-{
-    static const int sizes[2] = { 8, 16 };
-    unsigned short words[16];
-    int g, s, y, set;
-    static const char *const bad_len[2] = { "#.", "..#" };
-    static const char *const bad_chr[2] = { "#.", "x." };
-
-    for (g = 0; g < GLYPH_COUNT; g++) {
-        for (s = 0; s < 2; s++) {
-            const char *const *rows = glyph_rows((GlyphId)g, sizes[s]);
-
-            CHECK(rows != NULL);
-            if (rows == NULL)
-                continue;
-            CHECK_INT(glyph_pack(rows, sizes[s], words), 0);
-            set = 0;
-            for (y = 0; y < sizes[s]; y++)
-                set += words[y] != 0;
-            CHECK(set >= 3);
-            if (sizes[s] == 8)
-                for (y = 0; y < 8; y++)
-                    CHECK((words[y] & 0x00ff) == 0);        /* 8 pixels: the high byte only */
-        }
-    }
-    CHECK(glyph_rows(GLYPH_BACK, 12) == NULL);
-    CHECK_INT(glyph_pack(bad_len, 2, words), -1);
-    CHECK_INT(glyph_pack(bad_chr, 2, words), -1);
-
-    {
-        static const char *const one[4] = { "#..#", "....", "####", "#..." };
-        CHECK_INT(glyph_pack(one, 4, words), 0);
-        CHECK_INT(words[0], 0x9000);
-        CHECK_INT(words[2], 0xF000);
-        CHECK_INT(words[3], 0x8000);
-    }
-}
-
 void test_ui(void)
 {
     test_commands();
     test_winstate();
     test_rect();
     test_toolbar();
-    test_glyphs();
 }
