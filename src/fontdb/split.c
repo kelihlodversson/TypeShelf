@@ -53,8 +53,16 @@ static void join_tokens(char *dst, const char *const *start, const size_t *len,
     for (i = from; i < to; i++) {
         size_t need = len[i] + (used > 0 ? 1 : 0);
 
-        if (used + need >= SPLIT_NAME_MAX)
+        if (used + need >= SPLIT_NAME_MAX) {
+            /* a first word that alone does not fit is cut to fit; a later one
+             * that does not fit is left out whole */
+            if (used == 0) {
+                used = SPLIT_NAME_MAX - 1;
+                memcpy(dst, start[i], used);
+                dst[used] = '\0';
+            }
             break;
+        }
         if (used > 0)
             dst[used++] = ' ';
         memcpy(dst + used, start[i], len[i]);

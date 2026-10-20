@@ -40,7 +40,17 @@ void test_split(void)
     memset(longname, 'x', sizeof longname - 1);
     longname[sizeof longname - 1] = '\0';
     font_split_name(longname, &parts);
-    CHECK(strlen(parts.family) < SPLIT_NAME_MAX);
+    CHECK_INT(strlen(parts.family), SPLIT_NAME_MAX - 1);    /* cut, not dropped */
+    CHECK(parts.family[0] == 'x');
+    CHECK_STR(parts.style, "Regular");
+
+    /* a later word that does not fit is left out whole */
+    memset(longname, 'a', 40);
+    longname[40] = ' ';
+    memset(longname + 41, 'b', 40);
+    longname[81] = '\0';
+    font_split_name(longname, &parts);
+    CHECK_INT(strlen(parts.family), 40);
 
     /* more words than tokens: still terminates */
     longname[0] = '\0';
