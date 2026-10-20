@@ -158,7 +158,13 @@ arm: build/arm/TYPESHLF.PRG
 
 CHECK_SRC    = $(LOGIC_SRC) $(GEM_SRC) $(GENERIC_PLATFORM_SRC)
 
+# the host's gcc only on x86_64 Linux (it needs -mx32 multilib support); anywhere
+# else the bare-metal cross compiler
+ifeq ($(shell uname -s -m),Linux x86_64)
 X86_CC       ?= gcc
+else
+X86_CC       ?= x86_64-elf-gcc
+endif
 X86_FLAGS    ?= -mx32
 CHECK_CFLAGS = $(STD) $(WARN) -Werror -O2 -ffreestanding -Isrc/compat $(INCLUDES)
 
