@@ -18,8 +18,7 @@ int main(void)
     FontList list;
     char os_text[64];
     char alert[256];
-    unsigned short os_version;
-    int is_etos;
+    PlatformOs os;
     int faces;
 
     if (appl_init() < 0)
@@ -35,8 +34,12 @@ int main(void)
     if (faces < 0) {
         form_alert(1, "[3][Type Shelf|Out of memory.][OK]");
     } else {
-        if (platform_get_os(&os_version, &is_etos) == 0)
-            gdos_format_os(os_version, is_etos, os_text, sizeof os_text);
+        if (platform_get_os(&os) != 0)
+            strcpy(os_text, "unknown OS");
+        else if (os.name != 0)
+            gdos_format_osname(os.name, os.version, os_text, sizeof os_text);
+        else if (os.tos_version != 0)
+            gdos_format_os(os.tos_version, os.is_etos, os_text, sizeof os_text);
         else
             strcpy(os_text, "unknown OS");
         snprintf(alert, sizeof alert, "[1][Type Shelf|%d families, %d faces|%s|%s][OK]",

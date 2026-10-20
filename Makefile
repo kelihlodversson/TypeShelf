@@ -20,8 +20,8 @@ LOGIC_SRC += src/layout/layout.c
 LOGIC_SRC += src/fontdb/build.c
 GEM_SRC   = src/main.c
 GEM_SRC  += src/vdi_if/vdi_if_gem.c
-M68K_PLATFORM_SRC = src/platform/m68k/platform.c
-GENERIC_PLATFORM_SRC = src/platform/generic/platform.c
+M68K_PLATFORM_SRC = src/platform/platform.c src/platform/m68k/legacy.c
+GENERIC_PLATFORM_SRC = src/platform/platform.c src/platform/generic/legacy.c
 
 STD      = -std=gnu99
 WARN     = -Wall -Wextra
