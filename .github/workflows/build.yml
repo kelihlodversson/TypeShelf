@@ -1,0 +1,67 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Host unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the unit tests
+        run: make test
+
+  m68k:
+    name: Build TYPESHLF.PRG (m68k)
+    # the mintelf PPA has packages for this release; ubuntu-latest may not
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install the m68k toolchain
+        run: |
+          sudo add-apt-repository -y ppa:vriviere/mintelf
+          sudo apt-get update -qq
+          sudo apt-get install -y cross-mintelf-essential
+          pip3 install kconfiglib
+      - name: Build
+        run: make
+      - name: Check that it is a GEMDOS program
+        run: |
+          test "$(od -A n -t x1 -N 2 build/m68k/TYPESHLF.PRG | tr -d ' ')" = 601a
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TYPESHLF.PRG
+          path: build/m68k/TYPESHLF.PRG
+
+  check-arm:
+    name: Compile for ARM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install the ARM toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-arm-none-eabi
+      - name: Compile
+        run: make check-arm
+
+  check-x86_64:
+    name: Compile for x32
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install the x32 toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc gcc-multilib libc6-dev-x32
+      - name: Compile
+        run: make check-x86_64
