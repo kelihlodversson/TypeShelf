@@ -13,6 +13,7 @@ GEMLIB   = third_party/gemlib
 LIBCMINI = third_party/libcmini
 
 LOGIC_SRC =
+LOGIC_SRC += src/fontdb/split.c
 GEM_SRC   = src/main.c
 M68K_PLATFORM_SRC =
 GENERIC_PLATFORM_SRC =
@@ -23,6 +24,21 @@ INCLUDES = -Isrc -I$(GEMLIB) -I$(LIBCMINI)/include
 
 .PHONY: all test check-arm check-x86_64 clean
 all: build/m68k/TYPESHLF.PRG
+
+# ---- host unit tests ---------------------------------------------------
+
+TEST_SRC   =
+TEST_SRC  += tests/main.c
+TEST_SRC  += tests/test_split.c
+CC_HOST    ?= cc
+HOST_FLAGS ?= $(STD) $(WARN) -Werror -g -Isrc -Itests
+
+build/host/tests: $(LOGIC_SRC) $(TEST_SRC) $(wildcard src/*/*.h tests/*.h)
+	mkdir -p build/host
+	$(CC_HOST) $(HOST_FLAGS) $(LOGIC_SRC) $(TEST_SRC) -o $@
+
+test: build/host/tests
+	./build/host/tests
 
 # ---- the libraries -----------------------------------------------------
 
