@@ -2721,7 +2721,7 @@ this addendum and the task text above differ, the repository is right.
 
 - **Task 9, build and link for ARM (issue #19, PR #20).** gemlib gained ARM
   support (gemlib PR #1), so `make arm` now builds libcmini and gemlib for ARM
-  and links `build/arm/TYPESHLF.elf`; it replaces `make check-arm`, and CI has
+  and links `build/arm/TYPESHLF.PRG`; it replaces `make check-arm`, and CI has
   an `arm` job instead of `check-arm`. gemlib is pinned at `d3476b6`. Both
   targets copy libcmini's two outputs to `build/<target>/lib/`, because
   libcmini has one `build/` and one `.config` for every configuration. libcmini

@@ -39,7 +39,7 @@ are done, a final PR merges the epic branch into `main`.
 
     make test             host unit tests (native compiler)
     make                  build/m68k/TYPESHLF.PRG
-    make arm              build/arm/TYPESHLF.elf (links; not yet run on pTOS)
+    make arm              build/arm/TYPESHLF.PRG (links; not yet run on pTOS)
     make check-x86_64     compile the sources for x32 (no link)
     make clean
 

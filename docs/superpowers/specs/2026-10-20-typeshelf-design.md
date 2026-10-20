@@ -31,7 +31,7 @@ decoding, layout maths, the real font source, CI) is implemented; the UI is not.
 | Target | v1 | Why |
 | --- | --- | --- |
 | m68k | Built, runs, smoke-tested under Hatari | gemlib's trap layer exists for m68k |
-| ARM | Builds and links (`make arm`, `TYPESHLF.elf`); not run | gemlib has ARM support (gemlib PR #1) and libcmini has `ptos_arm_defconfig`; pTOS program entry (#387, #388) is still open, so nothing has run it yet |
+| ARM | Builds and links (`make arm`, `TYPESHLF.PRG`); not run | gemlib has ARM support (gemlib PR #1) and libcmini has `ptos_arm_defconfig`; pTOS runs ARM user programs, but this build has not been run yet: a QEMU `virt-arm` smoke test (below) will be the first run, and will show whether gemlib's ARM trap layer works on pTOS |
 | x86_64 (x32) | Compile-check only | gemlib has no x32 layer, and pTOS does not yet make the VDI and AES reachable from ring 3 (epic #548: the native VDI call contract #427, the AES client library split #404, and more) |
 
 x86_64 becomes a link once gemlib has an x32 layer, and both ARM and x86_64
@@ -209,7 +209,7 @@ TypeShelf/
   then the app: 68000, 32-bit `int`, `-nostdlib`, linked against `crt0.o`,
   `-lcmini -lgem -lgcc -lcmini`. Output `TYPESHLF.PRG`. No MiNT features.
 - **ARM:** `make arm` builds libcmini and gemlib for ARM and links
-  `build/arm/TYPESHLF.elf` (`arm-none-eabi-`); it has not been run on a pTOS.
+  `build/arm/TYPESHLF.PRG` (`arm-none-eabi-`); it has not been run on a pTOS.
 - **x86_64:** CI compiles `src/` with `-mx32` and does not link, until gemlib
   has an x32 trap layer.
 - **Toolchains:** installed as in pTOS's `toolchain-install` skill; CI uses the
@@ -252,7 +252,7 @@ Planned issues, in order:
 3. Window and toolbar framework.
 4. Overview views, then single-font views.
 5. Install Font, then About.
-6. CI and Hatari smoke tests.
+6. CI and smoke tests: Hatari for m68k, and QEMU `virt-arm` for ARM, with `TYPESHLF.PRG` and an `emudesk.inf` that autolaunches it on a FAT volume from QEMU's virtual FAT driver (`-drive file=fat:rw:<dir>`).
 
 ## Dependencies on pTOS
 
@@ -262,7 +262,7 @@ Planned issues, in order:
 | Selecting and drawing scalable fonts | #576 |
 | Font folder and default font set | #578 |
 | Epic | #573, #585 |
-| ARM program entry and libcmini startup | #387, #388 |
+| ARM process-entry ABI and desk accessories (not needed for a plain program) | #387, #388 |
 | VDI and AES reachable from ring 3 on x32 (epic; includes the native VDI call contract #427) | #548 |
 | Telling the built-in GDOS from a disk GDOS (About label) | #623 |
 

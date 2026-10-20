@@ -2,7 +2,7 @@
 #
 #   make test            host unit tests
 #   make                 build/m68k/TYPESHLF.PRG
-#   make arm             build/arm/TYPESHLF.elf   (links; not yet run on pTOS)
+#   make arm             build/arm/TYPESHLF.PRG   (links; not yet run on pTOS)
 #   make check-x86_64    compile the sources for x32 (no link)
 #   make clean
 #
@@ -131,11 +131,11 @@ build/arm/%.o: src/%.c $(wildcard src/*/*.h) $(GEMLIB_H)
 	@mkdir -p $(dir $@)
 	$(ARM_CC) $(ARM_CFLAGS) -c $< -o $@
 
-build/arm/TYPESHLF.elf: $(ARM_OBJ) $(ARM_LIBGEM) $(ARM_LIBCMINI) $(ARM_CRT)
+build/arm/TYPESHLF.PRG: $(ARM_OBJ) $(ARM_LIBGEM) $(ARM_LIBCMINI) $(ARM_CRT)
 	$(ARM_CC) $(ARM_ABI) -nostdlib $(ARM_CRT) $(ARM_OBJ) \
 	    -Lbuild/arm/lib -lcmini -lgem -lgcc -lcmini -o $@
 
-arm: build/arm/TYPESHLF.elf
+arm: build/arm/TYPESHLF.PRG
 
 # ---- x86: compile only, until gemlib has a trap layer for it -----------
 
