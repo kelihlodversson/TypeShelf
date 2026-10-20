@@ -37,6 +37,6 @@ libcmini's configuration also needs Python 3 and kconfiglib:
 ## x86_64 (compile check, x32)
 
     sudo apt-get install -y gcc gcc-multilib libc6-dev-x32     # Ubuntu
-    brew install x86_64-elf-gcc                                # macOS
+    brew install x86_64-elf-gcc x86_64-elf-binutils                             # macOS
 
-On macOS run `make check-x86_64 X86_CC=x86_64-elf-gcc`.
+On macOS run `gmake check-x86_64 X86_CC=x86_64-elf-gcc`; the system `gcc` is clang and cannot compile libcmini's headers.
