@@ -3,7 +3,7 @@
 #   make test            host unit tests
 #   make                 build/m68k/TYPESHLF.PRG
 #   make arm             build/arm/TYPESHLF.elf   (links; not yet run on pTOS)
-#   make check-x86_64    compile them for x32 (no link)
+#   make check-x86_64    compile the sources for x32 (no link)
 #   make clean
 #
 # Needs GNU make, and for m68k the m68k-atari-mintelf- toolchain on PATH

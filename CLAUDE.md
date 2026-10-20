@@ -40,7 +40,7 @@ are done, a final PR merges the epic branch into `main`.
     make test             host unit tests (native compiler)
     make                  build/m68k/TYPESHLF.PRG
     make arm              build/arm/TYPESHLF.elf (links; not yet run on pTOS)
-    make check-x86_64     compile the portable sources for x32 (no link)
+    make check-x86_64     compile the sources for x32 (no link)
     make clean
 
 Needs GNU make (on macOS: `gmake`, Apple's is 3.81), and for m68k the
