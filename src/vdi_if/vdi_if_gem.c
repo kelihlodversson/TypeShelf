@@ -24,7 +24,10 @@ static int probe_ext(const GemSource *gs)
     short id1 = vqt_name(gs->handle, 1, name);
     short id2 = vqt_ext_name(gs->handle, 1, name, &format, &flags);
 
-    return id1 > 0 && id1 == id2 && format != 0;
+    /* a VDI without the call leaves the id it was preset to, 0, so the ids
+     * differ; a vector face may legitimately report format 0 in the short
+     * reply, so the format is not part of the test */
+    return id1 > 0 && id1 == id2;
 }
 
 static int probe_xfnt(const GemSource *gs)

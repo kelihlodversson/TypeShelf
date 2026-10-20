@@ -1,7 +1,6 @@
 /*
  * platform.c (m68k) - cookie jar and OS header, with calls every TOS has
- *
- * Ssystem() is a MiNT call EmuTOS lacks, so it is not used here.
+ * (Setexc() and Super(); not the MiNT-only Ssystem(), which EmuTOS lacks)
  */
 #include <mint/osbind.h>
 #include "platform/platform.h"
