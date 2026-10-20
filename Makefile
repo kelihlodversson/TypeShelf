@@ -63,7 +63,9 @@ LIBCMINI_CRT = build/m68k/lib/crt0.o
 $(GEMLIB_H):
 	$(MAKE) -C $(GEMLIB) mt_gem.h
 
-$(GEMLIB_A): $(GEMLIB_H)
+# gemlib does its own dependency checking, so ask it on every build; it leaves
+# the archive alone (and so does not relink) when nothing changed.
+$(GEMLIB_A): $(GEMLIB_H) FORCE
 	$(MAKE) -C $(GEMLIB) CROSS_TOOL=$(patsubst %-,%,$(M68K_PREFIX)) .lib68000/libgem.a
 
 # libcmini keeps one build/ directory and one .config for every target, so each
@@ -72,7 +74,19 @@ $(GEMLIB_A): $(GEMLIB_H)
 LIBCMINI_COPY = rsync -a --exclude=.git --exclude=/build --exclude=/obj \
     --exclude=/.config --exclude=/.config.old $(LIBCMINI)/
 
-$(LIBCMINI_A):
+# libcmini is copied, so a stamp holding the submodule's revision (and whether
+# it has local edits) tells make when the copies are out of date.
+LIBCMINI_REV = build/libcmini.rev
+
+$(LIBCMINI_REV): FORCE
+	@mkdir -p $(dir $@)
+	@echo "$$(git -C $(LIBCMINI) rev-parse HEAD) $$(git -C $(LIBCMINI) status --porcelain | cksum)" > $@.new
+	@cmp -s $@.new $@ && rm $@.new || mv $@.new $@
+
+FORCE:
+.PHONY: FORCE
+
+$(LIBCMINI_A): $(LIBCMINI_REV)
 	rm -rf build/m68k/libcmini
 	mkdir -p build/m68k/libcmini $(dir $@)
 	$(LIBCMINI_COPY) build/m68k/libcmini/
@@ -112,12 +126,12 @@ ARM_CFLAGS = $(STD) $(WARN) -Werror -O2 -ffreestanding $(ARM_ABI) \
 ARM_SRC    = $(LOGIC_SRC) $(GEM_SRC) $(GENERIC_PLATFORM_SRC)
 ARM_OBJ    = $(patsubst src/%.c,build/arm/%.o,$(ARM_SRC))
 
-$(ARM_LIBGEM): $(GEMLIB_H)
+$(ARM_LIBGEM): $(GEMLIB_H) FORCE
 	$(MAKE) -C $(GEMLIB) ARCH=arm .libarm/libgem.a
 	@mkdir -p $(dir $@)
-	cp $(GEMLIB)/.libarm/libgem.a $@
+	@cmp -s $(GEMLIB)/.libarm/libgem.a $@ || cp $(GEMLIB)/.libarm/libgem.a $@
 
-$(ARM_LIBCMINI):
+$(ARM_LIBCMINI): $(LIBCMINI_REV)
 	rm -rf build/arm/libcmini
 	mkdir -p build/arm/libcmini $(dir $@)
 	$(LIBCMINI_COPY) build/arm/libcmini/
