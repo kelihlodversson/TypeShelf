@@ -150,6 +150,25 @@ static void test_toolbar(void)
         CHECK_INT(toolbar_zoom_at(&tl, th.x + th.w / 2), pt);   /* a round trip */
     }
 
+    /* every window width the AES can give: what is present fits, in both modes */
+    {
+        int w, m;
+
+        for (w = 104; w <= 640; w += 4) {
+            for (m = MODE_OVERVIEW; m <= MODE_SINGLE; m++) {
+                toolbar_layout(&tl, w, 8, (WinMode)m);
+                for (i = 0; i < TB_COUNT; i++) {
+                    if (!tl.present[i])
+                        continue;
+                    CHECK(tl.rect[i].x >= 0);
+                    CHECK(tl.rect[i].x + tl.rect[i].w <= w);
+                }
+                CHECK(tl.present[TB_VIEW1] && tl.present[TB_VIEW2]);
+                CHECK(m == MODE_OVERVIEW ? tl.present[TB_VIEW3] : tl.present[TB_BACK] && tl.present[TB_STYLE]);
+            }
+        }
+    }
+
     /* a narrow window gets the small bitmaps; one too narrow loses the slider */
     toolbar_layout(&tl, 200, 8, MODE_OVERVIEW);
     CHECK_INT(tl.icon, 8);

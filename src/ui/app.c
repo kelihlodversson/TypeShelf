@@ -13,6 +13,7 @@ typedef struct {
     Window *windows;            /* the front window first isn't kept: ask the AES */
     int opened;                 /* windows opened so far, for the cascade */
     int quit;
+    int button_down;            /* a press was handled; wait for the release */
     const char *about;
 } App;
 
@@ -256,8 +257,13 @@ int app_run(short vh, const FontList *fonts, const char *about)
         if (events & MU_KEYBD)
             execute(&app, command_from_key((unsigned short)out.emo_kreturn,
                                            (unsigned short)out.emo_kmeta));
-        if (events & MU_BUTTON)
-            on_click(&app, out.emo_mouse.p_x, out.emo_mouse.p_y);
+        if (events & MU_BUTTON) {
+            /* ask for the press and the release in turn, so a held button is one click */
+            if (!app.button_down)
+                on_click(&app, out.emo_mouse.p_x, out.emo_mouse.p_y);
+            app.button_down = !app.button_down;
+            in.emi_bstate = app.button_down ? 0 : 1;
+        }
     }
 
     while (app.windows != NULL)

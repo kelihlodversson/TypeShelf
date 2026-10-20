@@ -78,18 +78,21 @@ def build(res_dir):
         first = t * per_tree
         tree_starts.append(off_obj + first * OBJECT)
         spec = 0x00000000
-        objects += struct.pack(">hhhHHHlhhhh", NIL, first + 1, first + n_icons, G_BOX, 0, 0,
+        # links are indexes inside the tree: its root is 0, whatever its place in the file
+        objects += struct.pack(">hhhHHHlhhhh", NIL, 1, n_icons, G_BOX, 0, 0,
                                spec, 0, 0, size << 8, size << 8)
         for i in range(n_icons):
             idx = first + 1 + i
-            nxt = first if i == n_icons - 1 else idx + 1
+            nxt = 0 if i == n_icons - 1 else i + 2
             flags = OF_LASTOB if i == n_icons - 1 else 0    # the last object of the tree
             spec = off_ib + ib_index * ICONBLK
             objects += struct.pack(">hhhHHHlhhhh", nxt, NIL, NIL, G_ICON, flags, 0,
                                    spec, 0, 0, size << 8, size << 8)
+            # a bitmap is a whole number of 16 pixel words wide, so the 8x8 icons are 16
+            # wide in their ICONBLK (the mask clears the right half) and 8 in the object
             mask_off, data_off = ib_off[ib_index]
             iconblks += struct.pack(">lllhhhhhhhhhhh", mask_off, data_off, off_str,
-                                    0x1000, 0, 0, 0, 0, size, size, 0, 0, 0, 0)    # black on white
+                                    0x1000, 0, 0, 0, 0, 16, size, 0, 0, 0, 0)    # black on white
             ib_index += 1
 
     header = struct.pack(">18H", 0, off_obj, off_ib, off_ib, off_ib + n_ib * ICONBLK, off_str,
@@ -107,9 +110,16 @@ def check(path):
     n_obj, n_tree, n_ted, n_ib, n_bb = h[10], h[11], h[12], h[13], h[14]
     ok = (h[0] == 0 and h[17] == len(d) and n_tree == len(SIZES) and n_ted == 0 and n_bb == 0
           and n_obj == (1 + len(ICONS)) * len(SIZES) and n_ib == len(ICONS) * len(SIZES))
-    for i in range(n_obj):
-        o = struct.unpack(">hhhHHHlhhhh", d[h[1] + i * OBJECT:h[1] + (i + 1) * OBJECT])
-        ok = ok and o[3] in (G_BOX, G_ICON) and -1 <= o[0] < n_obj
+    per_tree = 1 + len(ICONS)
+    for t in range(n_tree):
+        for i in range(per_tree):
+            o = struct.unpack(">hhhHHHlhhhh", d[h[1] + (t * per_tree + i) * OBJECT:
+                                                h[1] + (t * per_tree + i + 1) * OBJECT])
+            if i == 0:      # the root: icons 1 to n, itself unlinked
+                ok = ok and o[3] == G_BOX and o[0] == NIL and o[1] == 1 and o[2] == len(ICONS)
+            else:           # an icon: the next one, or back to the root; no children
+                ok = ok and o[3] == G_ICON and o[1] == NIL and o[2] == NIL
+                ok = ok and o[0] == (0 if i == len(ICONS) else i + 1)
     for t in range(n_tree):
         end = (t + 1) * (1 + len(ICONS)) - 1
         last = struct.unpack(">hhhHHHlhhhh", d[h[1] + end * OBJECT:h[1] + (end + 1) * OBJECT])

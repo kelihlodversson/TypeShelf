@@ -6,7 +6,7 @@
 #include "ui/window.h"
 
 #define WINDOW_PARTS    (NAME | CLOSER | FULLER | MOVER | SIZER | UPARROW | DNARROW | VSLIDE)
-#define MIN_W           120
+#define MIN_W           140
 #define MIN_H           80
 
 static void to_grect(const Rect *r, GRECT *g)
@@ -37,17 +37,19 @@ Window *window_open(const UiEnv *env, int cascade)
     if (w == NULL)
         return NULL;
     winstate_init(&w->state);
+    /* the desktop's rectangle is what "full" returns to, the cascaded one is where it opens */
+    to_grect(&env->desk, &g);
+    w->handle = wind_create_grect(WINDOW_PARTS, &g);
+    if (w->handle < 0) {
+        free(w);
+        return NULL;
+    }
     r = env->desk;
     r.x += 12 * (cascade % 6);
     r.y += 12 * (cascade % 6);
     r.w -= 12 * (cascade % 6);
     r.h -= 12 * (cascade % 6);
     to_grect(&r, &g);
-    w->handle = wind_create_grect(WINDOW_PARTS, &g);
-    if (w->handle < 0) {
-        free(w);
-        return NULL;
-    }
     window_refresh(env, w);
     wind_open_grect(w->handle, &g);
     window_refresh(env, w);
@@ -328,4 +330,11 @@ void window_set_rect(const UiEnv *env, Window *w, const Rect *r)
     to_grect(&fixed, &g);
     wind_set_grect(w->handle, WF_CURRXYWH, &g);
     window_refresh(env, w);
+    /* the AES redraws what a resize exposes, not what stays: the toolbar may
+     * have been laid out differently */
+    {
+        Rect work = window_work(w);
+
+        window_draw(env, w, &work);
+    }
 }

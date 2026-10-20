@@ -7,6 +7,7 @@
 #define GAP         2       /* between buttons */
 #define GROUP_GAP   6       /* between groups of controls */
 #define MIN_TRACK   24
+#define MIN_STYLE   4       /* the style pulldown shrinks to this many cells */
 
 static void place(ToolbarLayout *tl, ToolbarItem item, int x, int y, int w, int h)
 {
@@ -19,7 +20,7 @@ static void place(ToolbarLayout *tl, ToolbarItem item, int x, int y, int w, int 
 
 void toolbar_layout(ToolbarLayout *tl, int work_w, int char_w, WinMode mode)
 {
-    int bw, x, track_w;
+    int bw, x, track_w, style_w, views;
     ToolbarItem v;
 
     memset(tl, 0, sizeof *tl);
@@ -31,8 +32,15 @@ void toolbar_layout(ToolbarLayout *tl, int work_w, int char_w, WinMode mode)
     if (mode == MODE_SINGLE) {
         place(tl, TB_BACK, x, 2, bw, bw);
         x += bw + GAP;
-        place(tl, TB_STYLE, x, 2, 12 * char_w + 2 * PAD, bw);
-        x += tl->rect[TB_STYLE].w + GROUP_GAP;
+        /* 12 cells if there is room; what the buttons after it need is kept free */
+        views = 2 * bw + GAP + GROUP_GAP + MARGIN;
+        style_w = 12 * char_w + 2 * PAD;
+        if (x + style_w + GROUP_GAP + views > work_w)
+            style_w = work_w - x - GROUP_GAP - views;
+        if (style_w < MIN_STYLE * char_w + 2 * PAD)
+            style_w = MIN_STYLE * char_w + 2 * PAD;
+        place(tl, TB_STYLE, x, 2, style_w, bw);
+        x += style_w + GROUP_GAP;
     }
     for (v = TB_VIEW1; v <= (mode == MODE_SINGLE ? TB_VIEW2 : TB_VIEW3); v++) {
         place(tl, v, x, 2, bw, bw);
