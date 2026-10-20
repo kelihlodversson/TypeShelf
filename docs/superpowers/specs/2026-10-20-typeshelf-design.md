@@ -31,7 +31,7 @@ Status: approved design, 2026-10-20. Nothing is implemented yet.
 | --- | --- | --- |
 | m68k | Built, runs, smoke-tested under Hatari | gemlib's trap layer exists for m68k |
 | ARM | Compile-check only | gemlib has no ARM trap layer; pTOS program entry (#387, #388) is open and libcmini ARM is untested end to end |
-| x86_64 (x32) | Compile-check only | gemlib has no x32 layer; pTOS refuses trap class 2 (VDI, AES) from ring 3 (`doc/x86_64-syscall.txt`), the AES is not in ring 3, and the native VDI call contract (#427) is open |
+| x86_64 (x32) | Compile-check only | gemlib has no x32 layer, and pTOS does not yet make the VDI and AES reachable from ring 3 (epic #548: the native VDI call contract #427, the AES client library split #404, and more) |
 
 When a gemlib port and the pTOS side exist, the compile check becomes a link
 and a run. The source must stay portable until then (see "Portability").
@@ -160,8 +160,8 @@ to `'_SPD'`, 4.00, quality -1. Scalable font ids start at 10000, and
 `vqt_name()` byte 33 flags outline fonts.
 
 Open item: an explicit "pTOS built-in GDOS" label needs a reliable
-identifier. None has been found yet; until one is, About shows the raw facts
-and the decoded name.
+identifier. pTOS has none yet (filed as pTOS #623); until it does, About shows
+the raw facts and the decoded name.
 
 ## Install Font
 
@@ -249,7 +249,8 @@ Planned issues, in order:
 | Font folder and default font set | #578 |
 | Epic | #573, #585 |
 | ARM program entry and libcmini startup | #387, #388 |
-| Native x32 VDI call contract | #427 |
+| VDI and AES reachable from ring 3 on x32 (epic; includes the native VDI call contract #427) | #548 |
+| Telling the built-in GDOS from a disk GDOS (About label) | #623 |
 
 ## Licence
 
