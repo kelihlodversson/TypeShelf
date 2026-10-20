@@ -14,6 +14,7 @@ LIBCMINI = third_party/libcmini
 
 LOGIC_SRC =
 LOGIC_SRC += src/fontdb/split.c
+LOGIC_SRC += src/fontdb/group.c
 GEM_SRC   = src/main.c
 M68K_PLATFORM_SRC =
 GENERIC_PLATFORM_SRC =
@@ -30,6 +31,7 @@ all: build/m68k/TYPESHLF.PRG
 TEST_SRC   =
 TEST_SRC  += tests/main.c
 TEST_SRC  += tests/test_split.c
+TEST_SRC  += tests/test_group.c
 CC_HOST    ?= cc
 HOST_FLAGS ?= $(STD) $(WARN) -Werror -g -Isrc -Itests
 
