@@ -26,10 +26,13 @@ libcmini's configuration also needs Python 3 and kconfiglib:
 
     pip3 install kconfiglib
 
-## ARM (compile check)
+## ARM (builds and links; not yet run on pTOS)
 
     sudo apt-get install -y gcc-arm-none-eabi       # Ubuntu
     brew install gcc-arm-embedded                   # macOS
+
+`make arm` builds libcmini and gemlib for ARM from the submodules and links
+`build/arm/TYPESHLF.elf`. It needs kconfiglib, as the m68k build does.
 
 ## x86_64 (compile check, x32)
 

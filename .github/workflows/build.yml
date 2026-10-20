@@ -38,8 +38,8 @@ jobs:
           name: TYPESHLF.PRG
           path: build/m68k/TYPESHLF.PRG
 
-  check-arm:
-    name: Compile for ARM
+  arm:
+    name: Build for ARM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,8 +49,13 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y gcc-arm-none-eabi
-      - name: Compile
-        run: make check-arm
+          pip3 install kconfiglib
+      - name: Build
+        run: make arm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TYPESHLF-arm.elf
+          path: build/arm/TYPESHLF.elf
 
   check-x86_64:
     name: Compile for x32

@@ -2,7 +2,7 @@
 #
 #   make test            host unit tests
 #   make                 build/m68k/TYPESHLF.PRG
-#   make check-arm       compile the portable sources for ARM (no link)
+#   make arm             build/arm/TYPESHLF.elf   (links; not yet run on pTOS)
 #   make check-x86_64    compile them for x32 (no link)
 #   make clean
 #
@@ -27,7 +27,7 @@ STD      = -std=gnu99
 WARN     = -Wall -Wextra
 INCLUDES = -Isrc -I$(GEMLIB) -I$(LIBCMINI)/include
 
-.PHONY: all test check-arm check-x86_64 clean
+.PHONY: all test arm check-x86_64 clean
 all: build/m68k/TYPESHLF.PRG
 
 # ---- host unit tests ---------------------------------------------------
@@ -56,8 +56,8 @@ M68K_CC      = $(M68K_PREFIX)gcc
 
 GEMLIB_H     = $(GEMLIB)/mt_gem.h
 GEMLIB_A     = $(GEMLIB)/.lib68000/libgem.a
-LIBCMINI_A   = $(LIBCMINI)/build/libcmini.a
-LIBCMINI_CRT = $(LIBCMINI)/build/objs/crt0.o
+LIBCMINI_A   = build/m68k/lib/libcmini.a
+LIBCMINI_CRT = build/m68k/lib/crt0.o
 
 # gemlib's headers are generated from mt_gem.h.in
 $(GEMLIB_H):
@@ -66,9 +66,15 @@ $(GEMLIB_H):
 $(GEMLIB_A): $(GEMLIB_H)
 	$(MAKE) -C $(GEMLIB) CROSS_TOOL=$(patsubst %-,%,$(M68K_PREFIX)) .lib68000/libgem.a
 
+# libcmini keeps one build/ directory and one .config for every target, so each
+# target configures it, builds, and copies its two files out before the next
+# target can overwrite them.
 $(LIBCMINI_A):
+	rm -rf $(LIBCMINI)/build
 	$(MAKE) -C $(LIBCMINI) mintelf_defconfig
 	$(MAKE) -C $(LIBCMINI) ONLY_68K=y dirs libs startups
+	@mkdir -p $(dir $@)
+	cp $(LIBCMINI)/build/libcmini.a $(LIBCMINI)/build/objs/crt0.o $(dir $@)
 
 $(LIBCMINI_CRT): $(LIBCMINI_A)
 
@@ -84,23 +90,55 @@ build/m68k/%.o: src/%.c $(wildcard src/*/*.h) $(GEMLIB_H)
 
 build/m68k/TYPESHLF.PRG: $(M68K_OBJ) $(GEMLIB_A) $(LIBCMINI_A) $(LIBCMINI_CRT)
 	$(M68K_CC) -m68000 -nostdlib $(LIBCMINI_CRT) $(M68K_OBJ) \
-	    -L$(GEMLIB)/.lib68000 -L$(LIBCMINI)/build \
+	    -L$(GEMLIB)/.lib68000 -Lbuild/m68k/lib \
 	    -lcmini -lgem -lgcc -lcmini -o $@
 
-# ---- ARM and x86: compile only, until gemlib has their trap layers -----
+# ---- ARM ---------------------------------------------------------------
+
+ARM_PREFIX   ?= arm-none-eabi-
+ARM_CC        = $(ARM_PREFIX)gcc
+ARM_ABI       = -mfloat-abi=hard -mfpu=vfp -mword-relocations
+ARM_LIBGEM    = build/arm/lib/libgem.a
+ARM_LIBCMINI  = build/arm/lib/libcmini.a
+ARM_CRT       = build/arm/lib/crt0.o
+
+# gemlib's own include/arm directory has the compiler.h its headers need
+ARM_CFLAGS = $(STD) $(WARN) -Werror -O2 -ffreestanding $(ARM_ABI) \
+    -Isrc -I$(GEMLIB)/include/arm -I$(GEMLIB) -I$(LIBCMINI)/include
+ARM_SRC    = $(LOGIC_SRC) $(GEM_SRC) $(GENERIC_PLATFORM_SRC)
+ARM_OBJ    = $(patsubst src/%.c,build/arm/%.o,$(ARM_SRC))
+
+$(ARM_LIBGEM): $(GEMLIB_H)
+	$(MAKE) -C $(GEMLIB) ARCH=arm .libarm/libgem.a
+	@mkdir -p $(dir $@)
+	cp $(GEMLIB)/.libarm/libgem.a $@
+
+$(ARM_LIBCMINI):
+	rm -rf $(LIBCMINI)/build
+	$(MAKE) -C $(LIBCMINI) ptos_arm_defconfig
+	$(MAKE) -C $(LIBCMINI) dirs libs startups
+	@mkdir -p $(dir $@)
+	cp $(LIBCMINI)/build/libcmini.a $(LIBCMINI)/build/objs/crt0.o $(dir $@)
+
+$(ARM_CRT): $(ARM_LIBCMINI)
+
+build/arm/%.o: src/%.c $(wildcard src/*/*.h) $(GEMLIB_H)
+	@mkdir -p $(dir $@)
+	$(ARM_CC) $(ARM_CFLAGS) -c $< -o $@
+
+build/arm/TYPESHLF.elf: $(ARM_OBJ) $(ARM_LIBGEM) $(ARM_LIBCMINI) $(ARM_CRT)
+	$(ARM_CC) $(ARM_ABI) -nostdlib $(ARM_CRT) $(ARM_OBJ) \
+	    -Lbuild/arm/lib -lcmini -lgem -lgcc -lcmini -o $@
+
+arm: build/arm/TYPESHLF.elf
+
+# ---- x86: compile only, until gemlib has a trap layer for it -----------
 
 CHECK_SRC    = $(LOGIC_SRC) $(GEM_SRC) $(GENERIC_PLATFORM_SRC)
 
-ARM_CC       ?= arm-none-eabi-gcc
-ARM_FLAGS    ?=
 X86_CC       ?= gcc
 X86_FLAGS    ?= -mx32
 CHECK_CFLAGS = $(STD) $(WARN) -Werror -O2 -ffreestanding -Isrc/compat $(INCLUDES)
-
-check-arm: $(GEMLIB_H)
-	for f in $(CHECK_SRC); do \
-	    $(ARM_CC) $(ARM_FLAGS) $(CHECK_CFLAGS) -c $$f -o /dev/null || exit 1; \
-	done
 
 check-x86_64: $(GEMLIB_H)
 	for f in $(CHECK_SRC); do \
