@@ -74,13 +74,16 @@ $(GEMLIB_A): $(GEMLIB_H) FORCE
 LIBCMINI_COPY = rsync -a --exclude=.git --exclude=/build --exclude=/obj \
     --exclude=/.config --exclude=/.config.old $(LIBCMINI)/
 
-# libcmini is copied, so a stamp holding the submodule's revision (and whether
-# it has local edits) tells make when the copies are out of date.
+# libcmini is copied, so a stamp fingerprinting the submodule's files (contents,
+# not just names, so editing a modified file again counts) tells make when the
+# copies are out of date.  The stamp keeps its timestamp while nothing changes.
 LIBCMINI_REV = build/libcmini.rev
 
 $(LIBCMINI_REV): FORCE
 	@mkdir -p $(dir $@)
-	@echo "$$(git -C $(LIBCMINI) rev-parse HEAD) $$(git -C $(LIBCMINI) status --porcelain | cksum)" > $@.new
+	@(cd $(LIBCMINI) && git rev-parse HEAD && \
+	    git ls-files -co --exclude-standard | LC_ALL=C sort | \
+	    while read -r f; do cksum "$$f" 2>/dev/null; done) | cksum > $@.new
 	@cmp -s $@.new $@ && rm $@.new || mv $@.new $@
 
 FORCE:
