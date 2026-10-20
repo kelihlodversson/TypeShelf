@@ -2712,3 +2712,50 @@ Open the PR and check that all four jobs pass. The workflow cannot be run from a
 - `make check-arm` and `make check-x86_64` pass.
 - CI is green on the final PR from the epic branch.
 - Not done, and the subject of the next plans: nothing has been run on a TOS, EmuTOS or pTOS yet.
+
+## Addendum: what happened after this plan was written
+
+This plan was executed with one subagent per task and a review after each; the
+stack is PR #10 to #24. Three things were added or changed afterwards. Where
+this addendum and the task text above differ, the repository is right.
+
+- **Task 9, build and link for ARM (issue #19, PR #20).** gemlib gained ARM
+  support (gemlib PR #1), so `make arm` now builds libcmini and gemlib for ARM
+  and links `build/arm/TYPESHLF.elf`; it replaces `make check-arm`, and CI has
+  an `arm` job instead of `check-arm`. gemlib is pinned at `d3476b6`. Both
+  targets copy libcmini's two outputs to `build/<target>/lib/`, because
+  libcmini has one `build/` and one `.config` for every configuration. libcmini
+  has no `distclean` target (its `clean` fails on a fresh tree), so the rule
+  removes its `build/` directory instead.
+- **Task 10, review comments (issue #21, PR #22).** Copilot's comments on #10,
+  #11, #13, #14 and #16 were checked and fixed, one commit each: a first word
+  longer than the buffer is cut, not dropped (`split.c`); BCD versions are
+  printed in hex and the OS line fits a `form_alert()` line, so it is now
+  `EmuTOS or pTOS (TOS 2.06)` (`decode.c`); the AES slider position is 0..1000
+  and the scroll maths cannot overflow 32 bits (`layout.c`; not with `long
+  long`, whose division pulls libgcc's soft-float objects into the hard-float
+  ARM link); a vector face keeps its format bit when `vqt_ext_name()` reports 0
+  (`vdi_if_gem.c`); and the check-x86_64 wording.
+- **Task 11, final review (issue #23, PR #24).** The ext probe no longer
+  depends on the format being non-zero; the spec and CLAUDE.md say that ARM
+  links; and the font model's deferral (below) is recorded.
+
+The code samples in Tasks 2, 3, 4, 5 and 7 show the code as first written. The
+repository has the later versions: `join_tokens()` in `split.c`, the
+out-of-memory rollback in `fontlist_add()` (Task 3's fix round), `%x.%02x` and
+the shorter OS line in `decode.c`, the scroll functions in `layout.c`, and the
+format fallback and probe in `vdi_if_gem.c`. "Done when" above mentions
+`make check-arm`; read it as `make arm`.
+
+**Additional differences from the spec:**
+
+- The plan text above treats ARM as a compile check; it builds and links (see Task 9). Only x86_64 stays a compile check.
+- The font model carries the name, the styles and the OR of their formats.
+  The spec's per-family scalable flag follows from the format bits, and the
+  bitmap point sizes are not read yet (`vqt_xfntinfo()` is asked for names
+  only): they arrive with the views plan, when drawing needs them and a real
+  VDI can be asked.
+
+**Deferred, for the next plans:** nothing has run on a TOS, EmuTOS or pTOS yet;
+the three assumptions in `vdi_if_gem.c` (the face count, the two probes, and
+`vq_gdos()` before loading) are the first thing to check on a real machine.
