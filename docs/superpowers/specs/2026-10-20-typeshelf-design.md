@@ -14,8 +14,8 @@ Status: approved design, 2026-10-20. Nothing is implemented yet.
 - Install a font file into the system fonts folder and reload.
 - An About dialog that shows the OS, the GDOS/VDI variant and version, the
   screen, and the font counts.
-- A native GEM application: m68k (runs on TOS, EmuTOS and pTOS), with ARM and
-  x86 compile-checked.
+- A native GEM application: m68k (runs on TOS, EmuTOS and pTOS); ARM builds
+  and links; x86 is compile-checked.
 - Usable down to ST-LOW (320x200).
 
 ## Non-goals (for v1)
@@ -30,11 +30,12 @@ Status: approved design, 2026-10-20. Nothing is implemented yet.
 | Target | v1 | Why |
 | --- | --- | --- |
 | m68k | Built, runs, smoke-tested under Hatari | gemlib's trap layer exists for m68k |
-| ARM | Compile-check only | gemlib has no ARM trap layer; pTOS program entry (#387, #388) is open and libcmini ARM is untested end to end |
+| ARM | Builds and links (`make arm`, `TYPESHLF.elf`); not run | gemlib has ARM support (gemlib PR #1) and libcmini has `ptos_arm_defconfig`; pTOS program entry (#387, #388) is still open, so nothing has run it yet |
 | x86_64 (x32) | Compile-check only | gemlib has no x32 layer, and pTOS does not yet make the VDI and AES reachable from ring 3 (epic #548: the native VDI call contract #427, the AES client library split #404, and more) |
 
-When a gemlib port and the pTOS side exist, the compile check becomes a link
-and a run. The source must stay portable until then (see "Portability").
+x86_64 becomes a link once gemlib has an x32 layer, and both ARM and x86_64
+become a run when the pTOS side exists. The source must stay portable until
+then (see "Portability").
 
 ## Scale and screens
 
@@ -116,6 +117,12 @@ A `FontFamily` has a name, a list of styles, format flags, whether it is
 scalable, and, for bitmap fonts, the available point sizes. Each style has a
 font id and its name.
 
+The foundation code (`src/fontdb/group.h`) carries the name, the styles and the
+OR of their formats; whether a family is scalable follows from the format bits.
+The available point sizes are not read yet: `vqt_xfntinfo()` is asked for the
+names only. The sizes arrive with the views plan, when drawing needs them and a
+real VDI can be asked.
+
 ### Building the list
 
 At startup, and again after Install:
@@ -185,7 +192,7 @@ file and tells the user to restart.
 
 ```
 TypeShelf/
-  Makefile                 make | make test | make check-arm | make check-x86_64
+  Makefile                 make | make test | make arm | make check-x86_64
   CLAUDE.md                workflow and conventions
   third_party/gemlib/      submodule: kelihlodversson/gemlib, pinned
   third_party/libcmini/    submodule: kelihlodversson/libcmini, pinned
@@ -200,8 +207,10 @@ TypeShelf/
 - **m68k:** `make` builds libcmini and gemlib from the submodules,
   then the app: 68000, 32-bit `int`, `-nostdlib`, linked against `crt0.o`,
   `-lcmini -lgem -lgcc -lcmini`. Output `TYPESHLF.PRG`. No MiNT features.
-- **ARM, x86_64:** CI compiles `src/` with `arm-none-eabi-` and with `-mx32`
-  and does not link, until gemlib has their trap layers.
+- **ARM:** `make arm` builds libcmini and gemlib for ARM and links
+  `build/arm/TYPESHLF.elf` (`arm-none-eabi-`); it has not been run on a pTOS.
+- **x86_64:** CI compiles `src/` with `-mx32` and does not link, until gemlib
+  has an x32 trap layer.
 - **Toolchains:** installed as in pTOS's `toolchain-install` skill; CI uses the
   same packages as pTOS CI.
 
