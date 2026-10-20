@@ -6,10 +6,13 @@ installs new fonts, and reports which VDI/GDOS the machine has.
 
 It targets m68k first (TOS, EmuTOS and [pTOS](https://github.com/kelihlodversson/pTOS)),
 built with [gemlib](https://github.com/kelihlodversson/gemlib) and
-[libcmini](https://github.com/kelihlodversson/libcmini). ARM and x86 are
-compile-checked until gemlib and pTOS can run a GEM application there.
+[libcmini](https://github.com/kelihlodversson/libcmini). ARM builds and links,
+and x86 is compile-checked, until gemlib and pTOS can run a GEM application
+there.
 
-Nothing is implemented yet; the design is in
+The foundation is in place: the font list, the GDOS and OS decoding, the layout
+maths, a real font source over gemlib, and CI. The windows, views, Install Font
+and the About dialog are still to come. The design is in
 [docs/superpowers/specs/2026-10-20-typeshelf-design.md](docs/superpowers/specs/2026-10-20-typeshelf-design.md).
 
 Licence: GPL-2.0-or-later.
