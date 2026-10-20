@@ -2749,7 +2749,7 @@ format fallback and probe in `vdi_if_gem.c`. "Done when" above mentions
 
 **Additional differences from the spec:**
 
-- ARM builds and links (see Task 9); only x86_64 stays a compile check.
+- The plan text above treats ARM as a compile check; it builds and links (see Task 9). Only x86_64 stays a compile check.
 - The font model carries the name, the styles and the OR of their formats.
   The spec's per-family scalable flag follows from the format bits, and the
   bitmap point sizes are not read yet (`vqt_xfntinfo()` is asked for names

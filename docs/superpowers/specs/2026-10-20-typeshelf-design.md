@@ -4,7 +4,8 @@ A Font Book style font viewer for GEM. It lists the fonts the VDI/GDOS has
 installed, grouped by family and style, shows them in several views, installs
 new fonts, and reports which VDI/GDOS the machine has.
 
-Status: approved design, 2026-10-20. Nothing is implemented yet.
+Status: approved design, 2026-10-20. The foundation (build, font list, GDOS
+decoding, layout maths, the real font source, CI) is implemented; the UI is not.
 
 ## Goals
 
