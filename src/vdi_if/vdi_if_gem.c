@@ -56,7 +56,10 @@ static int gem_face_get(void *ctx, int index, VdiFace *out)
     if (id <= 0)
         return -1;
 
-    if (!gs->have_ext)
+    /* vqt_name() reports no format, and vqt_ext_name() gives 0 for a vector
+     * face in its short (34 word) reply: the bitmap/vector flag in name[32]
+     * decides in both cases */
+    if (format == 0)
         format = name[32] != 0 ? FONT_FORMAT_VECTOR : FONT_FORMAT_BITMAP;
     name[32] = '\0';
 
