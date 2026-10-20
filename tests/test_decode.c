@@ -46,4 +46,13 @@ void test_decode(void)
     /* a buffer that is too small is cut, never overrun */
     gdos_format_version("NVDI", 0x0410, buf, 5);
     CHECK_STR(buf, "NVDI");
+
+    gdos_format_osname(0x70544F53L, 0x00000061UL, buf, sizeof buf);
+    CHECK_STR(buf, "pTOS 0.0.0a");
+    gdos_format_osname(0x4D694E54L, 0x01130000UL, buf, sizeof buf);
+    CHECK_STR(buf, "MiNT 1.19.0");
+    gdos_format_osname(0x4D694E54L, 0UL, buf, sizeof buf);
+    CHECK_STR(buf, "MiNT");
+    gdos_format_osname(0x41420000L, 0UL, buf, sizeof buf);
+    CHECK_STR(buf, "AB??");
 }

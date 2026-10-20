@@ -20,8 +20,8 @@ LOGIC_SRC += src/layout/layout.c
 LOGIC_SRC += src/fontdb/build.c
 GEM_SRC   = src/main.c
 GEM_SRC  += src/vdi_if/vdi_if_gem.c
-M68K_PLATFORM_SRC = src/platform/m68k/platform.c
-GENERIC_PLATFORM_SRC = src/platform/generic/platform.c
+M68K_PLATFORM_SRC = src/platform/platform.c src/platform/m68k/legacy.c
+GENERIC_PLATFORM_SRC = src/platform/platform.c src/platform/generic/legacy.c
 
 STD      = -std=gnu99
 WARN     = -Wall -Wextra
@@ -158,7 +158,13 @@ arm: build/arm/TYPESHLF.PRG
 
 CHECK_SRC    = $(LOGIC_SRC) $(GEM_SRC) $(GENERIC_PLATFORM_SRC)
 
+# the host's gcc only on x86_64 Linux (it needs -mx32 multilib support); anywhere
+# else the bare-metal cross compiler
+ifeq ($(shell uname -s -m),Linux x86_64)
 X86_CC       ?= gcc
+else
+X86_CC       ?= x86_64-elf-gcc
+endif
 X86_FLAGS    ?= -mx32
 CHECK_CFLAGS = $(STD) $(WARN) -Werror -O2 -ffreestanding -Isrc/compat $(INCLUDES)
 

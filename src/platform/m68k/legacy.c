@@ -1,14 +1,14 @@
 /*
- * platform.c (m68k) - cookie jar and OS header, with calls every TOS has
- * (Setexc() and Super(); not the MiNT-only Ssystem(), which EmuTOS lacks)
+ * legacy.c (m68k) - cookie jar and OS header, with calls every TOS has
+ * (Setexc() and Super()), for when there is no Ssystem()
  */
 #include <mint/osbind.h>
-#include "platform/platform.h"
+#include "platform/legacy.h"
 
 #define P_COOKIES   0x5A0L          /* system variable: the cookie jar */
 #define SYSBASE     0x4F2L          /* system variable: the OS header */
 
-int platform_get_cookie(long id, long *value)
+int legacy_get_cookie(long id, long *value)
 {
     /* Setexc() with a vector number below 0x100 would be an exception vector;
      * 0x5A0 / 4 is the system variable's address as a vector number */
@@ -26,7 +26,7 @@ int platform_get_cookie(long id, long *value)
     return -1;
 }
 
-int platform_get_os(unsigned short *os_version, int *is_etos)
+int legacy_get_os(unsigned short *os_version, int *is_etos)
 {
     const unsigned char *header;
     long ssp = Super(0L);

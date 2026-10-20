@@ -29,4 +29,9 @@ void gdos_format_fsmc(const char magic[4], short version, short quality,
  * a form_alert() line */
 void gdos_format_os(unsigned short os_version, int is_etos, char *out, size_t cap);
 
+/* "pTOS 0.0.0a" or "MiNT 1.19.0": Ssystem()'s four-character OS name and its
+ * version (major<<24 | minor<<16 | patch<<8 | release character; 0 leaves it
+ * out).  At most 30 characters. */
+void gdos_format_osname(long name, unsigned long version, char *out, size_t cap);
+
 #endif

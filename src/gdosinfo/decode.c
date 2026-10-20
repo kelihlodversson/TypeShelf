@@ -51,3 +51,28 @@ void gdos_format_os(unsigned short os_version, int is_etos, char *out, size_t ca
         snprintf(out, cap, "TOS %x.%02x",
                  (unsigned)(os_version >> 8), (unsigned)(os_version & 0xff));
 }
+
+void gdos_format_osname(long name, unsigned long version, char *out, size_t cap)
+{
+    char text[5];
+    char rel[2] = { 0, 0 };
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        int c = (int)(((unsigned long)name >> (24 - 8 * i)) & 0xff);
+        text[i] = (c >= 0x20 && c < 0x7f) ? (char)c : '?';
+    }
+    text[4] = '\0';
+    for (i = 3; i > 0 && text[i] == ' '; i--)
+        text[i] = '\0';
+
+    if (version == 0) {
+        snprintf(out, cap, "%s", text);
+        return;
+    }
+    i = (int)(version & 0xff);
+    if (i > 0x20 && i < 0x7f)
+        rel[0] = (char)i;
+    snprintf(out, cap, "%s %u.%u.%u%s", text, (unsigned)((version >> 24) & 0xff),
+             (unsigned)((version >> 16) & 0xff), (unsigned)((version >> 8) & 0xff), rel);
+}
