@@ -173,6 +173,10 @@ the raw facts and the decoded name.
 5. Reload with `vst_unload_fonts()` then `vst_load_fonts()`, and rebuild the
    list.
 
+Type Shelf also reloads and rebuilds on the AES message `FNT_CHANGED` (83),
+which is sent when GDOS fonts are loaded or unloaded at run time, so a font
+installed by another program shows up too.
+
 Risk: whether that unload and load actually rescans the directory in pTOS's
 built-in GDOS depends on pTOS #576 and #578. If it does not, Install copies the
 file and tells the user to restart.
@@ -181,19 +185,19 @@ file and tells the user to restart.
 
 ```
 TypeShelf/
-  Makefile                 make TARGET=m68k|arm|x86_64
+  Makefile                 make | make test | make check-arm | make check-x86_64
   CLAUDE.md                workflow and conventions
   third_party/gemlib/      submodule: kelihlodversson/gemlib, pinned
   third_party/libcmini/    submodule: kelihlodversson/libcmini, pinned
   src/                     app, window, toolbar, fontdb, gdosinfo, install
   src/views/
-  src/platform/{m68k,arm,x86_64}/
+  src/platform/{m68k,generic}/
   tests/                   host unit tests
   docs/superpowers/specs/
   .github/workflows/build.yml
 ```
 
-- **m68k:** `make TARGET=m68k` builds libcmini and gemlib from the submodules,
+- **m68k:** `make` builds libcmini and gemlib from the submodules,
   then the app: 68000, 32-bit `int`, `-nostdlib`, linked against `crt0.o`,
   `-lcmini -lgem -lgcc -lcmini`. Output `TYPESHLF.PRG`. No MiNT features.
 - **ARM, x86_64:** CI compiles `src/` with `arm-none-eabi-` and with `-mx32`
