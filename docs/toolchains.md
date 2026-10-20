@@ -32,7 +32,7 @@ libcmini's configuration also needs Python 3 and kconfiglib:
     brew install gcc-arm-embedded                   # macOS
 
 `make arm` builds libcmini and gemlib for ARM from the submodules and links
-`build/arm/TYPESHLF.elf`. It needs kconfiglib, as the m68k build does.
+`build/arm/TYPESHLF.PRG`. It needs kconfiglib, as the m68k build does.
 
 ## x86_64 (compile check, x32)
 
