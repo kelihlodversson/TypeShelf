@@ -64,13 +64,21 @@ void test_layout(void)
     CHECK_INT(scroll_slider_size(1000, 250), 250);
     CHECK_INT(scroll_slider_size(200, 250), SLIDER_MAX);
     CHECK_INT(scroll_slider_size(100000, 1), 1);
-    CHECK_INT(scroll_slider_pos(0, 1000, 250), 1);
+    CHECK_INT(scroll_slider_pos(0, 1000, 250), 0);
     CHECK_INT(scroll_slider_pos(750, 1000, 250), SLIDER_MAX);
     CHECK_INT(scroll_slider_pos(9999, 1000, 250), SLIDER_MAX);
-    CHECK_INT(scroll_slider_pos(100, 200, 250), 1);
+    CHECK_INT(scroll_slider_pos(375, 1000, 250), 500);
+    CHECK_INT(scroll_slider_pos(100, 200, 250), 0);
+    CHECK_INT(scroll_offset_from_slider(0, 1000, 250), 0);
     CHECK_INT(scroll_offset_from_slider(1, 1000, 250), 0);
+    CHECK_INT(scroll_offset_from_slider(500, 1000, 250), 375);
     CHECK_INT(scroll_offset_from_slider(SLIDER_MAX, 1000, 250), 750);
     CHECK_INT(scroll_offset_from_slider(500, 200, 250), 0);
+    /* very tall documents: these products do not fit in 32 bits */
+    CHECK_INT(scroll_slider_pos(2500000, 3000000, 250), 833);
+    CHECK_INT(scroll_offset_from_slider(900, 3000000, 250), 2699775);
+    /* position 1 of a 1,000,000 pixel document is not the top */
+    CHECK_INT(scroll_offset_from_slider(1, 1000000, 250), 999);
     /* the slider position and the offset agree to within a pixel step */
     pos = scroll_slider_pos(375, 1000, 250);
     CHECK(scroll_offset_from_slider(pos, 1000, 250) >= 374 - 1);

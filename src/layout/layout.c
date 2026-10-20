@@ -68,26 +68,39 @@ int scroll_slider_size(int content_h, int view_h)
     return size < 1 ? 1 : (int)size;
 }
 
+/*
+ * value * SLIDER_MAX / max for 0 <= value <= max without a product that can
+ * overflow 32 bits: halve both until the product fits.  The error is at most
+ * one slider step, and only for documents over two million pixels tall.
+ */
+static long scaled_up(long value, long max)
+{
+    while (max > 2000000L) {
+        value >>= 1;
+        max >>= 1;
+    }
+    return value * SLIDER_MAX / max;
+}
+
 int scroll_slider_pos(int offset_y, int content_h, int view_h)
 {
     long max = (long)content_h - view_h;
-    long pos;
 
     if (max <= 0 || offset_y <= 0)
-        return 1;
+        return 0;
     if (offset_y >= max)
         return SLIDER_MAX;
-    pos = 1 + (long)offset_y * (SLIDER_MAX - 1) / max;
-    return (int)pos;
+    return (int)scaled_up(offset_y, max);
 }
 
+/* pos * max / SLIDER_MAX, exactly, split so that no product exceeds max */
 int scroll_offset_from_slider(int pos, int content_h, int view_h)
 {
     long max = (long)content_h - view_h;
 
-    if (max <= 0 || pos <= 1)
+    if (max <= 0 || pos <= 0)
         return 0;
     if (pos >= SLIDER_MAX)
         return (int)max;
-    return (int)((long)(pos - 1) * max / (SLIDER_MAX - 1));
+    return (int)((max / SLIDER_MAX) * pos + (max % SLIDER_MAX) * pos / SLIDER_MAX);
 }
