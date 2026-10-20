@@ -40,6 +40,7 @@ int fontlist_add(FontList *list, const FontFace *face)
     const char *style = face->style;
     FontFamily *fam = NULL;
     FontStyle *styles;
+    int created = 0;
     int i;
 
     if (family == NULL || family[0] == '\0' || style == NULL || style[0] == '\0') {
@@ -69,15 +70,28 @@ int fontlist_add(FontList *list, const FontFace *face)
         fam->style_count = 0;
         fam->formats = 0;
         list->family_count++;
+        created = 1;
     }
 
     styles = realloc(fam->styles, (size_t)(fam->style_count + 1) * sizeof(FontStyle));
-    if (styles == NULL)
+    if (styles == NULL) {
+        if (created) {
+            free(fam->name);
+            list->family_count--;
+        }
         return -1;
+    }
     fam->styles = styles;
     styles[fam->style_count].style = dup_str(style);
-    if (styles[fam->style_count].style == NULL)
+    if (styles[fam->style_count].style == NULL) {
+        if (created) {
+            free(fam->styles);
+            fam->styles = NULL;
+            free(fam->name);
+            list->family_count--;
+        }
         return -1;
+    }
     styles[fam->style_count].id = face->id;
     styles[fam->style_count].format = face->format;
     styles[fam->style_count].flags = face->flags;
