@@ -18,8 +18,16 @@ LOGIC_SRC += src/fontdb/group.c
 LOGIC_SRC += src/gdosinfo/decode.c
 LOGIC_SRC += src/layout/layout.c
 LOGIC_SRC += src/fontdb/build.c
+LOGIC_SRC += src/ui/rect.c
+LOGIC_SRC += src/ui/command.c
+LOGIC_SRC += src/ui/winstate.c
+LOGIC_SRC += src/ui/toolbar_layout.c
+LOGIC_SRC += src/ui/glyphs.c
 GEM_SRC   = src/main.c
 GEM_SRC  += src/vdi_if/vdi_if_gem.c
+GEM_SRC  += src/ui/menu.c
+GEM_SRC  += src/ui/window.c
+GEM_SRC  += src/ui/app.c
 M68K_PLATFORM_SRC = src/platform/platform.c src/platform/m68k/legacy.c
 GENERIC_PLATFORM_SRC = src/platform/platform.c src/platform/generic/legacy.c
 
@@ -39,6 +47,7 @@ TEST_SRC  += tests/test_group.c
 TEST_SRC  += tests/test_decode.c
 TEST_SRC  += tests/test_layout.c
 TEST_SRC  += tests/test_build.c
+TEST_SRC  += tests/test_ui.c
 CC_HOST    ?= cc
 HOST_FLAGS ?= $(STD) $(WARN) -Werror -g -Isrc -Itests
 

@@ -1,7 +1,7 @@
 /*
  * main.c - Type Shelf
  *
- * For now: list the fonts and say what was found.  The windows come next.
+ * Read the fonts, then run the windows.
  */
 #include <stdio.h>
 #include <string.h>
@@ -9,6 +9,7 @@
 #include "fontdb/build.h"
 #include "gdosinfo/decode.h"
 #include "platform/platform.h"
+#include "ui/app.h"
 #include "vdi_if/gem_source.h"
 
 int main(void)
@@ -44,7 +45,7 @@ int main(void)
             strcpy(os_text, "unknown OS");
         snprintf(alert, sizeof alert, "[1][Type Shelf|%d families, %d faces|%s|%s][OK]",
                  list.family_count, faces, gdos_vgdos_name(vq_vgdos()), os_text);
-        form_alert(1, alert);
+        app_run(gs.handle, &list, alert);
         fontlist_free(&list);
     }
 
