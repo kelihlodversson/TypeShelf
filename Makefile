@@ -15,6 +15,7 @@ LIBCMINI = third_party/libcmini
 LOGIC_SRC =
 LOGIC_SRC += src/fontdb/split.c
 LOGIC_SRC += src/fontdb/group.c
+LOGIC_SRC += src/gdosinfo/decode.c
 GEM_SRC   = src/main.c
 M68K_PLATFORM_SRC =
 GENERIC_PLATFORM_SRC =
@@ -32,6 +33,7 @@ TEST_SRC   =
 TEST_SRC  += tests/main.c
 TEST_SRC  += tests/test_split.c
 TEST_SRC  += tests/test_group.c
+TEST_SRC  += tests/test_decode.c
 CC_HOST    ?= cc
 HOST_FLAGS ?= $(STD) $(WARN) -Werror -g -Isrc -Itests
 
