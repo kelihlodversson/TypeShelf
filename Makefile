@@ -17,6 +17,7 @@ LOGIC_SRC += src/fontdb/split.c
 LOGIC_SRC += src/fontdb/group.c
 LOGIC_SRC += src/gdosinfo/decode.c
 LOGIC_SRC += src/layout/layout.c
+LOGIC_SRC += src/fontdb/build.c
 GEM_SRC   = src/main.c
 M68K_PLATFORM_SRC =
 GENERIC_PLATFORM_SRC =
@@ -36,6 +37,7 @@ TEST_SRC  += tests/test_split.c
 TEST_SRC  += tests/test_group.c
 TEST_SRC  += tests/test_decode.c
 TEST_SRC  += tests/test_layout.c
+TEST_SRC  += tests/test_build.c
 CC_HOST    ?= cc
 HOST_FLAGS ?= $(STD) $(WARN) -Werror -g -Isrc -Itests
 

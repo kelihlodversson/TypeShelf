@@ -8,6 +8,7 @@ void test_split(void);
 void test_group(void);
 void test_decode(void);
 void test_layout(void);
+void test_build(void);
 
 int main(void)
 {
@@ -15,6 +16,7 @@ int main(void)
     test_group();
     test_decode();
     test_layout();
+    test_build();
 
     printf("%d checks, %d failures\n", test_checks, test_failures);
     return test_failures != 0;
