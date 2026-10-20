@@ -67,14 +67,18 @@ $(GEMLIB_A): $(GEMLIB_H)
 	$(MAKE) -C $(GEMLIB) CROSS_TOOL=$(patsubst %-,%,$(M68K_PREFIX)) .lib68000/libgem.a
 
 # libcmini keeps one build/ directory and one .config for every target, so each
-# target configures it, builds, and copies its two files out before the next
-# target can overwrite them.
+# target builds in its own copy of it (a parallel `make all arm` cannot make the
+# two clash) and keeps the two files it needs from there.
+LIBCMINI_COPY = rsync -a --exclude=.git --exclude=/build --exclude=/obj \
+    --exclude=/.config --exclude=/.config.old $(LIBCMINI)/
+
 $(LIBCMINI_A):
-	rm -rf $(LIBCMINI)/build
-	$(MAKE) -C $(LIBCMINI) mintelf_defconfig
-	$(MAKE) -C $(LIBCMINI) ONLY_68K=y dirs libs startups
-	@mkdir -p $(dir $@)
-	cp $(LIBCMINI)/build/libcmini.a $(LIBCMINI)/build/objs/crt0.o $(dir $@)
+	rm -rf build/m68k/libcmini
+	mkdir -p build/m68k/libcmini $(dir $@)
+	$(LIBCMINI_COPY) build/m68k/libcmini/
+	$(MAKE) -C build/m68k/libcmini mintelf_defconfig
+	$(MAKE) -C build/m68k/libcmini ONLY_68K=y dirs libs startups
+	cp build/m68k/libcmini/build/libcmini.a build/m68k/libcmini/build/objs/crt0.o $(dir $@)
 
 $(LIBCMINI_CRT): $(LIBCMINI_A)
 
@@ -114,11 +118,12 @@ $(ARM_LIBGEM): $(GEMLIB_H)
 	cp $(GEMLIB)/.libarm/libgem.a $@
 
 $(ARM_LIBCMINI):
-	rm -rf $(LIBCMINI)/build
-	$(MAKE) -C $(LIBCMINI) ptos_arm_defconfig
-	$(MAKE) -C $(LIBCMINI) dirs libs startups
-	@mkdir -p $(dir $@)
-	cp $(LIBCMINI)/build/libcmini.a $(LIBCMINI)/build/objs/crt0.o $(dir $@)
+	rm -rf build/arm/libcmini
+	mkdir -p build/arm/libcmini $(dir $@)
+	$(LIBCMINI_COPY) build/arm/libcmini/
+	$(MAKE) -C build/arm/libcmini ptos_arm_defconfig
+	$(MAKE) -C build/arm/libcmini dirs libs startups
+	cp build/arm/libcmini/build/libcmini.a build/arm/libcmini/build/objs/crt0.o $(dir $@)
 
 $(ARM_CRT): $(ARM_LIBCMINI)
 

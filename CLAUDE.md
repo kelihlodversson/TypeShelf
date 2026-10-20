@@ -43,7 +43,7 @@ are done, a final PR merges the epic branch into `main`.
     make check-x86_64     compile the sources for x32 (no link)
     make clean
 
-Needs GNU make (on macOS: `gmake`, Apple's is 3.81), and for m68k the
+Needs GNU make (on macOS: `gmake`, Apple's is 3.81) and rsync, and for m68k the
 `m68k-atari-mintelf-` toolchain on `PATH` (for ARM, `arm-none-eabi-`), plus
 `pip3 install kconfiglib` for libcmini's configuration.
 `docs/toolchains.md` says where to get them.
