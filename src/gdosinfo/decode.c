@@ -32,22 +32,22 @@ const char *gdos_fsmc_name(const char magic[4])
 
 void gdos_format_version(const char *label, unsigned short bcd, char *out, size_t cap)
 {
-    snprintf(out, cap, "%s %d.%02x", label, (int)(bcd >> 8), (unsigned)(bcd & 0xff));
+    snprintf(out, cap, "%s %x.%02x", label, (unsigned)(bcd >> 8), (unsigned)(bcd & 0xff));
 }
 
 void gdos_format_fsmc(const char magic[4], short version, short quality,
                       char *out, size_t cap)
 {
-    snprintf(out, cap, "%s %d.%02x, quality %d", gdos_fsmc_name(magic),
-             (int)((version >> 8) & 0xff), (unsigned)(version & 0xff), (int)quality);
+    snprintf(out, cap, "%s %x.%02x, quality %d", gdos_fsmc_name(magic),
+             (unsigned)((version >> 8) & 0xff), (unsigned)(version & 0xff), (int)quality);
 }
 
 void gdos_format_os(unsigned short os_version, int is_etos, char *out, size_t cap)
 {
     if (is_etos)
-        snprintf(out, cap, "EmuTOS or pTOS (TOS %d.%02x compatible)",
-                 (int)(os_version >> 8), (unsigned)(os_version & 0xff));
+        snprintf(out, cap, "EmuTOS or pTOS (TOS %x.%02x)",
+                 (unsigned)(os_version >> 8), (unsigned)(os_version & 0xff));
     else
-        snprintf(out, cap, "TOS %d.%02x",
-                 (int)(os_version >> 8), (unsigned)(os_version & 0xff));
+        snprintf(out, cap, "TOS %x.%02x",
+                 (unsigned)(os_version >> 8), (unsigned)(os_version & 0xff));
 }

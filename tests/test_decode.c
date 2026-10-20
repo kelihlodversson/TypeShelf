@@ -27,16 +27,21 @@ void test_decode(void)
     CHECK_STR(buf, "NVDI 5.00");
     gdos_format_version("EdDI", 0x0110, buf, sizeof buf);
     CHECK_STR(buf, "EdDI 1.10");
+    gdos_format_version("NVDI", 0x1012, buf, sizeof buf);       /* two-digit major */
+    CHECK_STR(buf, "NVDI 10.12");
 
     gdos_format_fsmc("_SPD", 0x0400, -1, buf, sizeof buf);
     CHECK_STR(buf, "SpeedoGDOS 4.00, quality -1");
     gdos_format_fsmc("_SPD", 0x0500, 2, buf, sizeof buf);
     CHECK_STR(buf, "SpeedoGDOS 5.00, quality 2");
+    gdos_format_fsmc("_SPD", 0x1000, 0, buf, sizeof buf);
+    CHECK_STR(buf, "SpeedoGDOS 10.00, quality 0");
 
     gdos_format_os(0x0206, 0, buf, sizeof buf);
     CHECK_STR(buf, "TOS 2.06");
     gdos_format_os(0x0206, 1, buf, sizeof buf);
-    CHECK_STR(buf, "EmuTOS or pTOS (TOS 2.06 compatible)");
+    CHECK_STR(buf, "EmuTOS or pTOS (TOS 2.06)");
+    CHECK(strlen(buf) <= 30);                                   /* a form_alert() line */
 
     /* a buffer that is too small is cut, never overrun */
     gdos_format_version("NVDI", 0x0410, buf, 5);
