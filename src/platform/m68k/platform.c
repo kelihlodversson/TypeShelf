@@ -39,6 +39,6 @@ int platform_get_os(unsigned short *os_version, int *is_etos)
     *is_etos = header[0x2C] == 'E' && header[0x2D] == 'T' &&
                header[0x2E] == 'O' && header[0x2F] == 'S';
 
-    Super((void *)ssp);
+    SuperToUser(ssp);
     return 0;
 }
