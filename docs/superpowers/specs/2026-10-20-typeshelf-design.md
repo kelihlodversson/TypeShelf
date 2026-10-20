@@ -201,11 +201,11 @@ TypeShelf/
 - **Toolchains:** installed as in pTOS's `toolchain-install` skill; CI uses the
   same packages as pTOS CI.
 
-Open build question, a spike before anything depends on it: libcmini's
-`COMPILE_ELF` builds ELF with the mintelf toolchain, and real TOS cannot load
-ELF. Confirm that the toolchain can produce a GEMDOS PRG, or fall back to the
-a.out `m68k-atari-mint-` toolchain. Verify by booting the result in Hatari.
-libcmini, gemlib and the app must all use the same format.
+The mintelf toolchain links a hybrid executable: a GEMDOS PRG that is also an
+ELF, so the same file loads on real TOS, EmuTOS and pTOS. The build therefore
+uses `COMPILE_ELF` with `m68k-atari-mintelf-` throughout; libcmini, gemlib and
+the app must all be built the same way. The Hatari smoke test is what checks
+that the result loads on TOS.
 
 ### Portability
 
@@ -233,7 +233,7 @@ before real work. The owner merges.
 
 Planned issues, in order:
 
-1. Scaffold, build the libraries, and the PRG spike.
+1. Scaffold, and build the libraries and an empty GEM app as `TYPESHLF.PRG`.
 2. `fontdb` and `gdosinfo`, with host tests.
 3. Window and toolbar framework.
 4. Overview views, then single-font views.
