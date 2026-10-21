@@ -7,7 +7,8 @@
 #define GDOSINFO_ABOUT_H
 
 #define ABOUT_MAX_LINES 14
-#define ABOUT_WIDTH     38      /* characters a line may have, without the end mark */
+#define ABOUT_WIDTH     36      /* characters a line may have, without the end mark */
+#define ABOUT_PAD       1       /* blank cells either side; with the outline the dialog fits 320 pixels of 8-pixel cells */
 
 typedef struct {
     char os[48];                /* "pTOS 0.0.0a", "TOS 2.06", or "" */

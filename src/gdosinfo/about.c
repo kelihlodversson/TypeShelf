@@ -33,8 +33,12 @@ int about_format(const AboutFacts *f, char lines[][ABOUT_WIDTH + 1])
         put(lines, &n, "Vector: %s", tmp);
     }
     if (f->have_nvdi) {
-        gdos_format_version("NVDI", f->nvdi_bcd, tmp, sizeof tmp);
-        put(lines, &n, "        %s", tmp);
+        if (f->nvdi_bcd != 0) {
+            gdos_format_version("NVDI", f->nvdi_bcd, tmp, sizeof tmp);
+            put(lines, &n, "        %s", tmp);
+        } else {
+            put(lines, &n, "        NVDI present");
+        }
     }
     if (f->have_eddi)
         put(lines, &n, "        EdDI present");

@@ -38,6 +38,7 @@ void test_about(void)
         if (strlen(lines[i]) > ABOUT_WIDTH)
             all_fit = 0;
     CHECK(all_fit);
+    CHECK((ABOUT_WIDTH + 2 * ABOUT_PAD) * 8 + 8 <= 320);    /* the dialog and its outline fit an ST-LOW screen */
 
     /* a plain ST: no cookies, 16 colours, one family */
     memset(&f, 0, sizeof f);
@@ -64,4 +65,8 @@ void test_about(void)
     CHECK_STR(lines[5], "        NVDI 4.10");
     CHECK_STR(lines[6], "        EdDI present");
     CHECK_INT(n, 12);
+
+    f.nvdi_bcd = 0;                                 /* a version that could not be read */
+    about_format(&f, lines);
+    CHECK_STR(lines[5], "        NVDI present");
 }

@@ -43,7 +43,11 @@ void about_collect(AboutFacts *f, short vh, const FontList *fonts, int have_arbp
 #endif
     if (platform_get_cookie(COOKIE_NVDI, &value) == 0) {
         f->have_nvdi = 1;
-        f->nvdi_bcd = (unsigned short)(value >> 16);
+#if defined(__m68k__) || defined(__arm__)
+        /* the cookie points at a structure whose first word is the BCD version */
+        if (value != 0 && (value & 1) == 0)
+            f->nvdi_bcd = *(const unsigned short *)(uintptr_t)(unsigned long)value;
+#endif
     }
     f->have_eddi = platform_get_cookie(COOKIE_EDDI, &value) == 0;
     memset(ext, 0, sizeof ext);
@@ -97,7 +101,7 @@ void about_show(const AboutFacts *f)
     o[0].ob_head = 1;
     o[0].ob_tail = (short)btn;
     o[0].ob_next = -1;
-    place(&o[0], 0, 0, ABOUT_WIDTH + 4, n + 4);
+    place(&o[0], 0, 0, ABOUT_WIDTH + 2 * ABOUT_PAD, n + 4);
     for (i = 0; i < n; i++) {
         OBJECT *s = &o[1 + i];
 
@@ -105,14 +109,14 @@ void about_show(const AboutFacts *f)
         s->ob_spec.free_string = d->text[i];
         s->ob_next = (short)(2 + i);
         s->ob_head = s->ob_tail = -1;
-        place(s, 2, 1 + i, ABOUT_WIDTH, 1);
+        place(s, ABOUT_PAD, 1 + i, ABOUT_WIDTH, 1);
     }
     o[btn].ob_type = G_BUTTON;
     o[btn].ob_flags = OF_SELECTABLE | OF_DEFAULT | OF_EXIT | OF_LASTOB;
     o[btn].ob_spec.free_string = "OK";
     o[btn].ob_next = 0;
     o[btn].ob_head = o[btn].ob_tail = -1;
-    place(&o[btn], (ABOUT_WIDTH + 4 - 8) / 2, n + 2, 8, 1);
+    place(&o[btn], (ABOUT_WIDTH + 2 * ABOUT_PAD - 8) / 2, n + 2, 8, 1);
     for (i = 0; i <= btn; i++)
         rsrc_obfix(o, i);
 
