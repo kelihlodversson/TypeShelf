@@ -100,11 +100,7 @@ void window_refresh(const UiEnv *env, Window *w)
 
     toolbar_layout(&w->tb, work.w, env->cell_w, w->state.mode);
 
-    if (w->state.mode == MODE_SINGLE && list != NULL &&
-        w->state.family >= 0 && w->state.family < list->family_count)
-        snprintf(w->title, sizeof w->title, " %s ", list->families[w->state.family].name);
-    else
-        snprintf(w->title, sizeof w->title, " Type Shelf ");
+    window_title_text(list, &w->state, env->sys_font, w->title, sizeof w->title);
     wind_set_str(w->handle, WF_NAME, w->title);
 
     content = window_content_rect(w);

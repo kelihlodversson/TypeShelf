@@ -213,3 +213,31 @@ void style_count_text(int count, char *out, size_t cap)
 {
     snprintf(out, cap, "%d style%s", count, count == 1 ? "" : "s");
 }
+
+const char *family_display_name(const FontFamily *family, int sys_font)
+{
+    int i;
+
+    for (i = 0; i < family->style_count; i++)
+        if (family->styles[i].id == sys_font)
+            return "System Font";
+    return family->name;
+}
+
+void window_title_text(const FontList *list, const WinState *ws, int sys_font, char *out, size_t cap)
+{
+    const FontFamily *f;
+    char count[24];
+
+    if (ws->mode != MODE_SINGLE || list == NULL || ws->family < 0 || ws->family >= list->family_count) {
+        snprintf(out, cap, "TypeShelf: All Fonts");
+        return;
+    }
+    f = &list->families[ws->family];
+    if (ws->view == VIEW_SPECIMEN && ws->style >= 0 && ws->style < f->style_count) {
+        snprintf(out, cap, "TypeShelf: %s %s", family_display_name(f, sys_font), f->styles[ws->style].style);
+        return;
+    }
+    style_count_text(f->style_count, count, sizeof count);
+    snprintf(out, cap, "TypeShelf: %s, %s", family_display_name(f, sys_font), count);
+}

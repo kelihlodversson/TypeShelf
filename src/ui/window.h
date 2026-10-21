@@ -29,7 +29,7 @@ typedef struct Window {
     ToolbarLayout tb;
     Rect before_full;           /* where "fulled" returns to */
     int fulled;
-    char title[40];
+    char title[80];
     unsigned char *expanded;    /* List: which families show their styles */
     int expanded_n;
     struct Window *next;

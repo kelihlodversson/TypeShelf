@@ -56,18 +56,6 @@ static void label_cell(const UiEnv *env, int *cw, int *ch)
     }
 }
 
-/* the name to show: the system font's faces are named for one size ("6x6
- * system font"), but all its sizes belong to it */
-static const char *display_name(const UiEnv *env, const FontFamily *f)
-{
-    int i;
-
-    for (i = 0; i < f->style_count; i++)
-        if (f->styles[i].id == env->sys_font)
-            return "System Font";
-    return f->name;
-}
-
 /* a family's default style at pt points; the cell it gives */
 static void use_font(const UiEnv *env, const FontFamily *f, int style, int pt, int *cellw, int *cellh)
 {
@@ -243,7 +231,7 @@ static void draw_tile(const UiEnv *env, const Window *w, const Metrics *m, const
     chrome(env);
     sample_text(env, w, f, r, clip, r->x + (r->w - width) / 2, r->y + PAD, "Aa", color);
     vst_color(env->vh, (short)color);
-    centered(env, m, r, r->y + r->h - 2 * (m->ch + 2) - 2, display_name(env, f));
+    centered(env, m, r, r->y + r->h - 2 * (m->ch + 2) - 2, family_display_name(f, env->sys_font));
     style_count_text(f->style_count, count, sizeof count);
     centered(env, m, r, r->y + r->h - (m->ch + 2) - 2, count);
     vst_color(env->vh, 1);
@@ -261,7 +249,7 @@ static void draw_card(const UiEnv *env, const Window *w, const Metrics *m, const
     vst_color(env->vh, (short)color);
     style_count_text(f->style_count, count, sizeof count);
     n = (int)strlen(count);
-    label(env->vh, r->x + PAD, r->y + PAD, display_name(env, f), (r->w - 3 * PAD - n * m->cw) / m->cw);
+    label(env->vh, r->x + PAD, r->y + PAD, family_display_name(f, env->sys_font), (r->w - 3 * PAD - n * m->cw) / m->cw);
     label(env->vh, r->x + r->w - PAD - n * m->cw, r->y + PAD, count, n);
     sample_text(env, w, f, r, clip, r->x + PAD, r->y + PAD + m->ch + 2, sample_pangram, color);
     vst_color(env->vh, (short)color);
@@ -315,7 +303,7 @@ static void draw_list_row(const UiEnv *env, const Metrics *m, const FontList *li
         vst_color(vh, (short)(selected && lr.style < 0 ? 0 : 1));
         if (lr.style < 0) {
             draw_text(vh, r->x + m->cw, r->y + 1, expanded != NULL && expanded[lr.family] ? "-" : "+");
-            label(vh, x_name, r->y + 1, display_name(env, f), chars_name);
+            label(vh, x_name, r->y + 1, family_display_name(f, env->sys_font), chars_name);
             style_count_text(f->style_count, text, sizeof text);
             draw_text(vh, x_styles, r->y + 1, text);
             font_format_text(formats_of(f), text, sizeof text);

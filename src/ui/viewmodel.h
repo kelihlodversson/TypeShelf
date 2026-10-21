@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include "fontdb/group.h"
 #include "ui/rect.h"
+#include "ui/winstate.h"
 
 /* ---- Icons: a grid of tiles ---- */
 
@@ -78,6 +79,14 @@ void font_format_text(unsigned short formats, char *out, size_t cap);
 
 /* "1 style", "3 styles" */
 void style_count_text(int count, char *out, size_t cap);
+
+/* the name to show: the system font's faces are named for one size ("6x6
+ * system font"), but all its sizes belong to it */
+const char *family_display_name(const FontFamily *family, int sys_font);
+
+/* the window title for what the window shows: "TypeShelf: All Fonts",
+ * "TypeShelf: Andale Mono, 4 styles" or "TypeShelf: Andale Mono Italic" */
+void window_title_text(const FontList *list, const WinState *ws, int sys_font, char *out, size_t cap);
 
 /* the line the Samples view shows at the zoom size */
 extern const char sample_pangram[];

@@ -268,6 +268,28 @@ static void test_viewmodel(void)
     unsigned char expanded[3] = { 0, 0, 0 };
     ListRow row;
     char buf[64];
+    WinState ws;
+
+    /* the title says what the window shows */
+    winstate_init(&ws);
+    window_title_text(&list, &ws, -1, buf, sizeof buf);
+    CHECK_STR(buf, "TypeShelf: All Fonts");
+    winstate_enter(&ws, 1);
+    ws.view = VIEW_FAMILY_SAMPLES;
+    window_title_text(&list, &ws, -1, buf, sizeof buf);
+    CHECK_STR(buf, "TypeShelf: Beta, 3 styles");
+    ws.view = VIEW_SPECIMEN;
+    ws.style = 0;
+    window_title_text(&list, &ws, -1, buf, sizeof buf);
+    {
+        char want[64];
+
+        snprintf(want, sizeof want, "TypeShelf: Beta %s", list.families[1].styles[0].style);
+        CHECK_STR(buf, want);
+        window_title_text(&list, &ws, list.families[1].styles[0].id, buf, sizeof buf);
+        snprintf(want, sizeof want, "TypeShelf: System Font %s", list.families[1].styles[0].style);
+        CHECK_STR(buf, want);
+    }
 
     /* a grid of 5 tiles, 50 x 40 with a gap of 10, in a 200 wide view: 3 columns */
     grid_make(&g, 200, 50, 40, 10, 5);
