@@ -257,7 +257,7 @@ int repertoire_next(int first, int last, int after, int unicode)
     while (++c <= last) {
         if (c < 1 || c == 32)                       /* NUL cannot be drawn as a string; the space is blank */
             continue;
-        if (unicode && ((c >= 0x7F && c <= 0x9F) || (c >= 0xD800 && c <= 0xDFFF)))
+        if (unicode && (c < 0x20 || (c >= 0x7F && c <= 0x9F) || (c >= 0xD800 && c <= 0xDFFF)))
             continue;                               /* controls and surrogates */
         return c;
     }

@@ -304,26 +304,36 @@ static unsigned short formats_of(const FontFamily *f)
 /* The characters the Specimen shows: those of the style's first..last range
  * (vqt_fontinfo) the VDI can draw.  With a Unicode VDI the range is the
  * Unicode one and vqt_width answers -1 for a code the style lacks.  Kept for
- * the last font asked about, as asking costs a call a character. */
+ * the last few fonts asked about, as asking costs a call a character. */
+#define REP_SLOTS 4         /* fonts remembered; the oldest makes room */
+
 static struct {
     const FontList *list;
     int family, style, have_ucs2;
     int count;
     short *codes;
     int valid;
-} rep_cache;
+} rep_cache[REP_SLOTS];
+static int rep_next_slot;
 
 static void repertoire_of(const UiEnv *env, const Window *w, const FontFamily *f, int style, const short **codes,
                           int *count)
 {
-    int dw, dh, c, first, last, pass;
+    int dw, dh, c, first, last, pass, slot;
     short min, max, dist[5], width, eff[3];
 
-    if (!(rep_cache.valid && rep_cache.list == env->fonts && rep_cache.family == w->state.family &&
-          rep_cache.style == style && rep_cache.have_ucs2 == env->have_ucs2)) {
-        free(rep_cache.codes);
-        rep_cache.codes = NULL;
-        rep_cache.count = 0;
+    for (slot = 0; slot < REP_SLOTS; slot++) {
+        if (rep_cache[slot].valid && rep_cache[slot].list == env->fonts &&
+            rep_cache[slot].family == w->state.family && rep_cache[slot].style == style &&
+            rep_cache[slot].have_ucs2 == env->have_ucs2)
+            break;
+    }
+    if (slot == REP_SLOTS) {
+        slot = rep_next_slot;
+        rep_next_slot = (rep_next_slot + 1) % REP_SLOTS;
+        free(rep_cache[slot].codes);
+        rep_cache[slot].codes = NULL;
+        rep_cache[slot].count = 0;
         if (env->have_ucs2)
             vst_map_mode(env->vh, MAP_UNICODE);
         use_font(env, f, style, REP_PT, &dw, &dh);
@@ -337,14 +347,14 @@ static void repertoire_of(const UiEnv *env, const Window *w, const FontFamily *f
         /* count first, so a whole-plane search keeps only what the font has */
         for (pass = 0; pass < 2; pass++) {
             if (pass == 1) {
-                if (rep_cache.count == 0)
+                if (rep_cache[slot].count == 0)
                     break;
-                rep_cache.codes = malloc((size_t)rep_cache.count * sizeof(short));
-                if (rep_cache.codes == NULL) {
-                    rep_cache.count = 0;
+                rep_cache[slot].codes = malloc((size_t)rep_cache[slot].count * sizeof(short));
+                if (rep_cache[slot].codes == NULL) {
+                    rep_cache[slot].count = 0;
                     break;
                 }
-                rep_cache.count = 0;
+                rep_cache[slot].count = 0;
             }
             for (c = repertoire_next(first, last, -1, env->have_ucs2); c >= 0;
                  c = repertoire_next(first, last, c, env->have_ucs2)) {
@@ -353,21 +363,21 @@ static void repertoire_of(const UiEnv *env, const Window *w, const FontFamily *f
                 if (env->have_ucs2 && vqt_width(env->vh, (short)c, &cw, &l, &r) == -1)
                     continue;
                 if (pass == 1)
-                    rep_cache.codes[rep_cache.count] = (short)c;
-                rep_cache.count++;
+                    rep_cache[slot].codes[rep_cache[slot].count] = (short)c;
+                rep_cache[slot].count++;
             }
         }
         if (env->have_ucs2)
             vst_map_mode(env->vh, MAP_ATARI);
         chrome(env);
-        rep_cache.list = env->fonts;
-        rep_cache.family = w->state.family;
-        rep_cache.style = style;
-        rep_cache.have_ucs2 = env->have_ucs2;
-        rep_cache.valid = 1;
+        rep_cache[slot].list = env->fonts;
+        rep_cache[slot].family = w->state.family;
+        rep_cache[slot].style = style;
+        rep_cache[slot].have_ucs2 = env->have_ucs2;
+        rep_cache[slot].valid = 1;
     }
-    *codes = rep_cache.codes;
-    *count = rep_cache.count;
+    *codes = rep_cache[slot].codes;
+    *count = rep_cache[slot].count;
 }
 
 typedef struct {

@@ -288,6 +288,7 @@ static void test_viewmodel(void)
     CHECK_INT(repertoire_next(0xFFFE, 0x10010, 0xFFFE, 1), 0xFFFF);
     CHECK_INT(repertoire_next(0xFFFE, 0x10010, 0xFFFF, 1), -1);
     CHECK_INT(repertoire_next(10, 5, -1, 0), -1);
+    CHECK_INT(repertoire_next(0, 255, -1, 1), 0x21);        /* Unicode has no C0 controls; the Atari set keeps its symbols */
 
     /* the popup sits under its anchor and stays on the screen */
     {

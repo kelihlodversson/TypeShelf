@@ -76,12 +76,17 @@ int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const
     v_show_c(vh, 1);
 
     memset(&in, 0, sizeof in);
-    in.emi_flags = MU_KEYBD | MU_TIMER;
+    in.emi_flags = MU_KEYBD | MU_BUTTON | MU_TIMER;
+    in.emi_bclicks = 1;
+    in.emi_bmask = 1;
     in.emi_tlow = TICK_MS;
     for (;;) {
         short mx, my, mb;
         int row, down, want = sel, newtop = top, moved;
-        short events = evnt_multi_fast(&in, msg, &out);
+        short events;
+
+        in.emi_bstate = prev_down ? 0 : 1;      /* the next release, or press */
+        events = evnt_multi_fast(&in, msg, &out);
 
         if (events & MU_KEYBD) {
             int scan = (out.emo_kreturn >> 8) & 0xff;
@@ -108,7 +113,13 @@ int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const
                 keys = 1;               /* the keyboard leads until the pointer moves */
             }
         }
-        vq_mouse(vh, &mb, &mx, &my);
+        if (events & MU_BUTTON) {               /* the state at the click, even if it was over by now */
+            mx = out.emo_mouse.p_x;
+            my = out.emo_mouse.p_y;
+            mb = out.emo_mbutton;
+        } else {
+            vq_mouse(vh, &mb, &mx, &my);
+        }
         down = mb & 1;
         row = popup_row(&pop, row_h, mx, my);
         moved = mx != last_x || my != last_y;
