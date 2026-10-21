@@ -247,8 +247,14 @@ void window_draw(const UiEnv *env, Window *w, const Rect *area)
             draw_toolbar(env, w);
             if (w->state.mode == MODE_OVERVIEW) {
                 Rect content = window_content_rect(w);
+                Rect vclip;
 
-                view_draw(env, w, &content, &clip);
+                /* scrolled rows must not paint over the toolbar */
+                if (rect_intersect(&content, &clip, &vclip)) {
+                    draw_clip(vh, &vclip);
+                    drawing_clip = vclip;
+                    view_draw(env, w, &content, &vclip);
+                }
             } else {
                 draw_content(env, w);
             }

@@ -15,7 +15,7 @@ short vst_arbpt(short handle, short point, short *wchar, short *hchar, short *wc
 
 typedef struct {
     int cw, ch;                 /* the system font's cell: what the labels use */
-    int glyph_w, glyph_h;       /* a cell of the zoom size, in the first family's font */
+    int glyph_w, glyph_h;       /* the largest cell of the zoom size over the families' fonts */
     int block_h;                /* a tile's or a card's height */
     int tile_w;
     int row_h;                  /* a List row */
@@ -55,10 +55,23 @@ static void metrics(const UiEnv *env, const Window *w, Metrics *m)
     m->ch = env->cell_h;
     m->glyph_w = m->cw;
     m->glyph_h = m->ch;
-    if (list != NULL && list->family_count > 0 && list->families[0].style_count > 0) {
-        const FontFamily *f = &list->families[0];
+    if (list != NULL) {
+        int i, sized = 0;
 
-        use_font(env, f, family_default_style(f), w->state.zoom_pt, &m->glyph_w, &m->glyph_h);
+        /* every family previews in its own font, so size for the largest cell */
+        for (i = 0; i < list->family_count; i++) {
+            const FontFamily *f = &list->families[i];
+            int cw, chh;
+
+            if (f->style_count <= 0)
+                continue;
+            use_font(env, f, family_default_style(f), w->state.zoom_pt, &cw, &chh);
+            if (cw > m->glyph_w || !sized)
+                m->glyph_w = cw;
+            if (chh > m->glyph_h || !sized)
+                m->glyph_h = chh;
+            sized = 1;
+        }
         chrome(env);
     }
     m->block_h = m->glyph_h + 2 * PAD + 2 * (m->ch + 2);
