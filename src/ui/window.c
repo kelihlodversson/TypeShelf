@@ -300,21 +300,31 @@ ToolbarItem window_toolbar_hit(const Window *w, int x, int y)
     return toolbar_hit(&w->tb, x - bar.x, y - bar.y);
 }
 
+/* follow the mouse to x: set the zoom and redraw the toolbar if it changed */
+static void zoom_to_x(const UiEnv *env, Window *w, const Rect *bar, int x)
+{
+    int pt = toolbar_zoom_at(&w->tb, x - bar->x);
+
+    if (pt != w->state.zoom_pt) {
+        winstate_set_zoom(&w->state, pt);
+        window_draw(env, w, bar);
+    }
+}
+
 void window_drag_zoom(const UiEnv *env, Window *w, int x)
 {
     Rect bar = window_toolbar_rect(w);
     short mx, my, buttons, kmeta;
 
-    do {
-        int pt = toolbar_zoom_at(&w->tb, x - bar.x);
-
-        if (pt != w->state.zoom_pt) {
-            winstate_set_zoom(&w->state, pt);
-            window_draw(env, w, &bar);
-        }
+    for (;;) {
+        zoom_to_x(env, w, &bar, x);
         graf_mkstate(&mx, &my, &buttons, &kmeta);
         x = mx;
-    } while (buttons & 1);
+        if (!(buttons & 1)) {
+            zoom_to_x(env, w, &bar, x);         /* where the button went up counts too */
+            break;
+        }
+    }
     window_draw(env, w, &(Rect){ bar.x, bar.y + bar.h, bar.w, window_work(w).h - bar.h });
 }
 
