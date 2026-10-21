@@ -35,6 +35,42 @@ void draw_box(short vh, const Rect *r, int fill_color, int outline)
     v_pline(vh, 5, line);
 }
 
+void draw_down_arrow(short vh, int x, int y, int w)
+{
+    short line[4];
+    int i;
+
+    vsl_color(vh, 1);
+    vsl_type(vh, 1);
+    for (i = 0; i <= w / 2; i++) {
+        line[0] = (short)(x + i);
+        line[1] = (short)(y + i);
+        line[2] = (short)(x + w - 1 - i);
+        line[3] = (short)(y + i);
+        v_pline(vh, 2, line);
+    }
+}
+
+void draw_stipple(short vh, const Rect *r)
+{
+    short pattern[16], bar[4];
+    int i;
+
+    for (i = 0; i < 16; i++)
+        pattern[i] = (short)((i & 1) ? 0x5555 : 0xAAAA);
+    bar[0] = (short)r->x;
+    bar[1] = (short)r->y;
+    bar[2] = (short)(r->x + r->w - 1);
+    bar[3] = (short)(r->y + r->h - 1);
+    vswr_mode(vh, MD_TRANS);            /* only the pattern's set bits are painted */
+    vsf_udpat(vh, pattern, 1);
+    vsf_interior(vh, FIS_USER);
+    vsf_color(vh, 0);
+    vsf_perimeter(vh, 0);
+    v_bar(vh, bar);
+    vswr_mode(vh, MD_REPLACE);
+}
+
 void draw_text(short vh, int x, int y, const char *s)
 {
     short dummy_h, dummy_v;
