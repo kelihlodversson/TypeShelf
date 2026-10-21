@@ -102,6 +102,12 @@ extern const char *const specimen_preview[PREVIEW_LINES];
 int repertoire_count(void);
 int repertoire_char(int index);        /* the character code, or -1 out of range */
 
+/* Unicode: the characters worth looking for in a font, in blocks (Latin,
+ * Greek, Cyrillic, punctuation, currency, arrows, mathematics, boxes, shapes).
+ * The Specimen keeps those the font has. */
+int unicode_candidate_count(void);
+int unicode_candidate(int index);       /* the code, or -1 out of range */
+
 /* ---- the style pulldown's popup ---- */
 
 /* The popup's rectangle: below anchor, at least min_w wide, one row_h per

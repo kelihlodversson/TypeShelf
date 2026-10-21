@@ -89,6 +89,16 @@ static int probe_arbpt(const GemSource *gs)
     return found;
 }
 
+/* the VDI takes Unicode text if it answers a request for it with the mode;
+ * the Atari character set is put back */
+static int probe_ucs2(const GemSource *gs)
+{
+    int ok = vst_map_mode(gs->handle, MAP_UNICODE) == MAP_UNICODE;
+
+    vst_map_mode(gs->handle, MAP_ATARI);
+    return ok;
+}
+
 static int gem_face_get(void *ctx, int index, VdiFace *out)
 {
     GemSource *gs = ctx;
@@ -157,6 +167,7 @@ int gem_source_open(GemSource *gs, VdiFontSource *out)
     gs->have_ext = probe_ext(gs);
     gs->have_xfnt = probe_xfnt(gs);
     gs->have_arbpt = probe_arbpt(gs);
+    gs->have_ucs2 = probe_ucs2(gs);
 
     out->face_count = gem_face_count;
     out->face_get = gem_face_get;

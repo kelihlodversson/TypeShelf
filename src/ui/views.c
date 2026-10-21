@@ -300,6 +300,54 @@ static unsigned short formats_of(const FontFamily *f)
 
 #define REP_PT      16      /* the repertoire's size, whatever the zoom */
 
+/* The characters the Specimen shows: with a Unicode VDI, those of the
+ * candidate blocks the style has (vqt_width answers -1 for the others);
+ * otherwise the Atari character set.  Kept for the last font asked about,
+ * as asking costs a call a character. */
+#define MAX_REP 3000
+
+static struct {
+    const FontList *list;
+    int family, style, have_ucs2;
+    int count;
+    short codes[MAX_REP];
+    int valid;
+} rep_cache;
+
+static void repertoire_of(const UiEnv *env, const Window *w, const FontFamily *f, int style, const short **codes,
+                          int *count)
+{
+    int i, dw, dh;
+
+    if (!(rep_cache.valid && rep_cache.list == env->fonts && rep_cache.family == w->state.family &&
+          rep_cache.style == style && rep_cache.have_ucs2 == env->have_ucs2)) {
+        rep_cache.count = 0;
+        if (env->have_ucs2) {
+            vst_map_mode(env->vh, MAP_UNICODE);
+            use_font(env, f, style, REP_PT, &dw, &dh);
+            for (i = 0; i < unicode_candidate_count() && rep_cache.count < MAX_REP; i++) {
+                short cw, l, r;
+                int code = unicode_candidate(i);
+
+                if (vqt_width(env->vh, (short)code, &cw, &l, &r) != -1)
+                    rep_cache.codes[rep_cache.count++] = (short)code;
+            }
+            vst_map_mode(env->vh, MAP_ATARI);
+            chrome(env);
+        } else {
+            for (i = 0; i < repertoire_count(); i++)
+                rep_cache.codes[rep_cache.count++] = (short)repertoire_char(i);
+        }
+        rep_cache.list = env->fonts;
+        rep_cache.family = w->state.family;
+        rep_cache.style = style;
+        rep_cache.have_ucs2 = env->have_ucs2;
+        rep_cache.valid = 1;
+    }
+    *codes = rep_cache.codes;
+    *count = rep_cache.count;
+}
+
 typedef struct {
     int preview_y;          /* the first preview line */
     int line_h;
@@ -309,6 +357,8 @@ typedef struct {
     Grid rep;
     int rep_cw, rep_ch;     /* a glyph cell at REP_PT */
     int total;
+    const short *codes;     /* the repertoire */
+    int count;
 } Specimen;
 
 static const FontFamily *single_family(const UiEnv *env, const Window *w)
@@ -384,7 +434,8 @@ static void specimen_layout(const UiEnv *env, const Window *w, const Metrics *m,
     use_font(env, f, single_style(f, w), REP_PT, &sp->rep_cw, &sp->rep_ch);
     chrome(env);
     sp->rep_y = y;
-    grid_make(&sp->rep, content_w, sp->rep_cw + 8, sp->rep_ch + 6, 2, repertoire_count());
+    repertoire_of(env, w, f, single_style(f, w), &sp->codes, &sp->count);
+    grid_make(&sp->rep, content_w, sp->rep_cw + 8, sp->rep_ch + 6, 2, sp->count);
     sp->total = y + grid_height(&sp->rep) + GAP;
 }
 
@@ -401,9 +452,11 @@ static void draw_specimen(const UiEnv *env, const Window *w, const Metrics *m, c
     specimen_layout(env, w, m, content->w, &sp);
     draw_text(env->vh, content->x + GAP, oy + GAP, "Preview");
     preview_rows(env, w, f, content->w - 2 * GAP, content->x + GAP, oy + sp.preview_y, sp.line_h, 1);
-    draw_text(env->vh, content->x + GAP, oy + sp.rep_label_y, "Repertoire");
+    draw_text(env->vh, content->x + GAP, oy + sp.rep_label_y, env->have_ucs2 ? "Repertoire (Unicode)" : "Repertoire");
     use_font(env, f, single_style(f, w), REP_PT, &dw, &dh);
-    for (i = 0; i < repertoire_count(); i++) {
+    if (env->have_ucs2)
+        vst_map_mode(env->vh, MAP_UNICODE);
+    for (i = 0; i < sp.count; i++) {
         Rect t = grid_tile(&sp.rep, i);
         char ch[2];
         short ext[8];
@@ -415,11 +468,18 @@ static void draw_specimen(const UiEnv *env, const Window *w, const Metrics *m, c
         if (!rect_intersect(&r, clip, &vis))
             continue;
         draw_box(env->vh, &r, 0, 1);
-        ch[0] = (char)repertoire_char(i);
+        if (env->have_ucs2) {
+            draw_char16(env->vh, r.x + (r.w - char16_width(env->vh, sp.codes[i])) / 2, r.y + (r.h - sp.rep_ch) / 2,
+                        sp.codes[i]);
+            continue;
+        }
+        ch[0] = (char)sp.codes[i];
         ch[1] = '\0';
         vqt_extent(env->vh, ch, ext);
         draw_text(env->vh, r.x + (r.w - (ext[2] - ext[0])) / 2, r.y + (r.h - sp.rep_ch) / 2, ch);
     }
+    if (env->have_ucs2)
+        vst_map_mode(env->vh, MAP_ATARI);
     chrome(env);
 }
 

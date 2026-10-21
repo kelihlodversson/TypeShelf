@@ -274,6 +274,15 @@ static void test_viewmodel(void)
     char buf[64];
     WinState ws;
 
+    /* the Unicode candidates run through the blocks in order */
+    CHECK_INT(unicode_candidate(0), 0x21);
+    CHECK_INT(unicode_candidate(93), 0x7E);
+    CHECK_INT(unicode_candidate(94), 0xA1);
+    CHECK_INT(unicode_candidate(unicode_candidate_count() - 1), 0x26FF);
+    CHECK_INT(unicode_candidate(unicode_candidate_count()), -1);
+    CHECK_INT(unicode_candidate(-1), -1);
+    CHECK(unicode_candidate_count() > 1000 && unicode_candidate_count() < 4000);
+
     /* the popup sits under its anchor and stays on the screen */
     {
         Rect anchor = { 10, 20, 60, 16 };

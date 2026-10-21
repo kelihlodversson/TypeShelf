@@ -20,6 +20,7 @@ typedef struct {
     short sys_char_h;
     Rect desk;                  /* the desktop's work area */
     const FontList *fonts;
+    int have_ucs2;              /* the VDI draws Unicode text: the Specimen shows the font's Unicode characters */
     int have_arbpt;             /* the GDOS answers vst_arbpt (probed at start-up) */
 } UiEnv;
 

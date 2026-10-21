@@ -304,3 +304,48 @@ int popup_row(const Rect *popup, int row_h, int x, int y)
     row = (y - popup->y - 1) / row_h;
     return row < (popup->h - 2) / row_h ? row : -1;
 }
+
+/* first, last */
+static const unsigned short unicode_blocks[][2] = {
+    { 0x0021, 0x007E },     /* Basic Latin */
+    { 0x00A1, 0x00FF },     /* Latin-1 */
+    { 0x0100, 0x024F },     /* Latin Extended-A and B */
+    { 0x0370, 0x03FF },     /* Greek */
+    { 0x0400, 0x04FF },     /* Cyrillic */
+    { 0x2010, 0x2027 },     /* punctuation */
+    { 0x2030, 0x205E },
+    { 0x20A0, 0x20BF },     /* currency */
+    { 0x2100, 0x214F },     /* letterlike */
+    { 0x2190, 0x21FF },     /* arrows */
+    { 0x2200, 0x22FF },     /* mathematics */
+    { 0x2500, 0x257F },     /* box drawing */
+    { 0x25A0, 0x25FF },     /* shapes */
+    { 0x2600, 0x26FF }      /* symbols */
+};
+
+#define UNICODE_BLOCKS (int)(sizeof unicode_blocks / sizeof unicode_blocks[0])
+
+int unicode_candidate_count(void)
+{
+    int i, n = 0;
+
+    for (i = 0; i < UNICODE_BLOCKS; i++)
+        n += unicode_blocks[i][1] - unicode_blocks[i][0] + 1;
+    return n;
+}
+
+int unicode_candidate(int index)
+{
+    int i;
+
+    if (index < 0)
+        return -1;
+    for (i = 0; i < UNICODE_BLOCKS; i++) {
+        int n = unicode_blocks[i][1] - unicode_blocks[i][0] + 1;
+
+        if (index < n)
+            return unicode_blocks[i][0] + index;
+        index -= n;
+    }
+    return -1;
+}

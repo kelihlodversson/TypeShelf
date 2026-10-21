@@ -273,7 +273,7 @@ static void on_click(App *app, int x, int y, int clicks)
     }
 }
 
-int app_run(short vh, const FontList *fonts, const char *about, int have_arbpt)
+int app_run(short vh, const FontList *fonts, const char *about, int have_arbpt, int have_ucs2)
 {
     App app;
     short cw, ch, box_w, box_h;
@@ -287,6 +287,7 @@ int app_run(short vh, const FontList *fonts, const char *about, int have_arbpt)
     app.env.vh = vh;
     app.env.fonts = fonts;
     app.env.have_arbpt = have_arbpt;
+    app.env.have_ucs2 = have_ucs2;
     graf_handle(&cw, &ch, &box_w, &box_h);        /* the system font's cell, and its box */
     app.env.cell_w = cw;
     app.env.cell_h = ch;
