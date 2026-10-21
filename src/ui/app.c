@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "layout/layout.h"
+#include "ui/about.h"
 #include "ui/app.h"
 #include "ui/command.h"
 #include "ui/icons.h"
@@ -17,7 +18,7 @@ typedef struct {
     int opened;                 /* windows opened so far, for the cascade */
     int quit;
     int button_down;            /* a press was handled; wait for the release */
-    const char *about;
+    AboutFacts about;
 } App;
 
 static Window *find_window(App *app, int handle)
@@ -87,7 +88,7 @@ static void execute(App *app, Command cmd)
 
     switch (cmd) {
     case CMD_ABOUT:
-        form_alert(1, (char *)app->about);
+        about_show(&app->about);
         break;
     case CMD_NEW_WINDOW:
         new_window(app);
@@ -273,7 +274,7 @@ static void on_click(App *app, int x, int y, int clicks)
     }
 }
 
-int app_run(short vh, const FontList *fonts, const char *about, int have_arbpt, int have_ucs2)
+int app_run(short vh, const FontList *fonts, int have_arbpt, int have_ucs2)
 {
     App app;
     short cw, ch, box_w, box_h;
@@ -283,7 +284,7 @@ int app_run(short vh, const FontList *fonts, const char *about, int have_arbpt, 
     short msg[8];
 
     memset(&app, 0, sizeof app);
-    app.about = about;
+    about_collect(&app.about, vh, fonts, have_arbpt, have_ucs2);
     app.env.vh = vh;
     app.env.fonts = fonts;
     app.env.have_arbpt = have_arbpt;
