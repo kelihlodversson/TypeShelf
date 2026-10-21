@@ -147,10 +147,13 @@ static void draw_style_pulldown(const UiEnv *env, const Window *w)
             label = f->styles[w->state.style].style;
     }
     snprintf(text, sizeof text, "%.*s", chars, label);
-    vst_effects(env->vh, winstate_style_enabled(&w->state) ? 0 : 2);   /* light when disabled */
     draw_text(env->vh, r.x + 3, r.y + (r.h - env->cell_h) / 2, text);
-    vst_effects(env->vh, 0);
     draw_down_arrow(env->vh, r.x + r.w - 9, r.y + (r.h - 5) / 2, 7);
+    if (!winstate_style_enabled(&w->state)) {
+        Rect in = { r.x + 1, r.y + 1, r.w - 2, r.h - 2 };
+
+        draw_stipple(env->vh, &in);             /* the label and the arrow turn light */
+    }
 }
 
 static void draw_slider(const UiEnv *env, const Window *w)

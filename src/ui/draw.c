@@ -51,6 +51,26 @@ void draw_down_arrow(short vh, int x, int y, int w)
     }
 }
 
+void draw_stipple(short vh, const Rect *r)
+{
+    short pattern[16], bar[4];
+    int i;
+
+    for (i = 0; i < 16; i++)
+        pattern[i] = (short)((i & 1) ? 0x5555 : 0xAAAA);
+    bar[0] = (short)r->x;
+    bar[1] = (short)r->y;
+    bar[2] = (short)(r->x + r->w - 1);
+    bar[3] = (short)(r->y + r->h - 1);
+    vswr_mode(vh, MD_TRANS);            /* only the pattern's set bits are painted */
+    vsf_udpat(vh, pattern, 1);
+    vsf_interior(vh, FIS_USER);
+    vsf_color(vh, 0);
+    vsf_perimeter(vh, 0);
+    v_bar(vh, bar);
+    vswr_mode(vh, MD_REPLACE);
+}
+
 void draw_text(short vh, int x, int y, const char *s)
 {
     short dummy_h, dummy_v;
