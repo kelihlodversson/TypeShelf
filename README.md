@@ -10,10 +10,11 @@ built with [gemlib](https://github.com/kelihlodversson/gemlib) and
 and x86 is compile-checked, until gemlib and pTOS can run a GEM application
 there.
 
-![Type Shelf's window on EmuTOS: the menu bar, the toolbar with the three view buttons and the zoom slider, and a tile for the one font family that is installed](docs/images/screenshot-emutos-low.png)
+![The Icons view: a tile for each installed family, the system font and four TrueType fonts](docs/images/screenshot-icons.png)
 
-*Today's build under Hatari on pTOS (m68k, ST low, 320x200): the Icons view
-with the one font family a machine without a GDOS has, the system font.*
+![The Specimen view of Arial: a preview at the zoom size, then the font's Unicode characters](docs/images/screenshot-specimen.png)
+
+Both on pTOS (the scalable-fonts branch) under QEMU `virt-arm`, in 32-bit colour.
 
 Run `TYPESHLF.PRG` with `TYPESHLF.RSC` (the toolbar's icons) in the same folder.
 
