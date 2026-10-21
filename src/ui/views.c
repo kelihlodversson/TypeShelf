@@ -58,6 +58,13 @@ static void label_cell(const UiEnv *env, int *cw, int *ch)
     }
 }
 
+/* the baseline for a line of previews whose top is y: the cells are as tall
+ * as the largest font's, and a baseline sits about 4/5 of the way down one */
+static int base_y(const Metrics *m, int top)
+{
+    return top + m->glyph_h * 4 / 5;
+}
+
 /* a family's default style at pt points; the cell it gives */
 static void use_font(const UiEnv *env, const FontFamily *f, int style, int pt, int *cellw, int *cellh)
 {
@@ -188,7 +195,7 @@ static void label(short vh, int x, int y, const char *text, int chars)
 }
 
 /* the family in its default style at the zoom size, inside r (clipped to it
- * and to clip); text is drawn from x, y */
+ * and to clip); the text's baseline is at y, so that families line up */
 static void sample_text(const UiEnv *env, const Window *w, const FontFamily *f, const Rect *r,
                         const Rect *clip, int x, int y, const char *text, int color)
 {
@@ -204,7 +211,14 @@ static void sample_text(const UiEnv *env, const Window *w, const FontFamily *f, 
     draw_clip(env->vh, &vis);
     use_font(env, f, family_default_style(f), w->state.zoom_pt, &cw, &chh);
     vst_color(env->vh, (short)color);
-    draw_text(env->vh, x, y, text);
+    {
+        /* the text is aligned to the top, so move it up by the font's top
+         * line to put the baseline at y */
+        short min, max, dist[5], width, eff[3];
+
+        vqt_fontinfo(env->vh, &min, &max, dist, &width, eff);
+        draw_text(env->vh, x, y - dist[4], text);
+    }
     draw_clip(env->vh, clip);
     chrome(env);
 }
@@ -250,7 +264,7 @@ static void draw_tile(const UiEnv *env, const Window *w, const Metrics *m, const
     vqt_extent(env->vh, "Aa", ext);
     width = ext[2] - ext[0];
     chrome(env);
-    sample_text(env, w, f, &icon, clip, icon.x + (icon.w - width) / 2, icon.y + PAD, "Aa", selected ? 0 : 1);
+    sample_text(env, w, f, &icon, clip, icon.x + (icon.w - width) / 2, base_y(m, icon.y + PAD), "Aa", selected ? 0 : 1);
     ly = icon.y + icon.h + ICON_GAP;
     tile_label(env, m, r, ly, family_display_name(f, env->sys_font), selected);
     style_count_text(f->style_count, count, sizeof count);
@@ -271,7 +285,7 @@ static void draw_card(const UiEnv *env, const Window *w, const Metrics *m, const
     n = (int)strlen(count);
     label(env->vh, r->x + PAD, r->y + PAD, family_display_name(f, env->sys_font), (r->w - 3 * PAD - n * m->cw) / m->cw);
     label(env->vh, r->x + r->w - PAD - n * m->cw, r->y + PAD, count, n);
-    sample_text(env, w, f, r, clip, r->x + PAD, r->y + PAD + m->ch + 2, sample_pangram, color);
+    sample_text(env, w, f, r, clip, r->x + PAD, base_y(m, r->y + PAD + m->ch + 2), sample_pangram, color);
     vst_color(env->vh, (short)color);
     label(env->vh, r->x + PAD, r->y + r->h - PAD - m->ch, f->styles[family_default_style(f)].style,
           (r->w - 2 * PAD) / m->cw);
