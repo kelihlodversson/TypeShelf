@@ -272,3 +272,35 @@ int style_step(int current, int delta, int count)
         next = count - 1;
     return next;
 }
+
+Rect popup_rect(const Rect *anchor, int min_w, int row_h, int count, const Rect *screen)
+{
+    Rect r;
+    int rows, room;
+
+    r.w = anchor->w > min_w ? anchor->w : min_w;
+    if (r.w > screen->w)
+        r.w = screen->w;
+    r.x = anchor->x;
+    if (r.x + r.w > screen->x + screen->w)
+        r.x = screen->x + screen->w - r.w;
+    if (r.x < screen->x)
+        r.x = screen->x;
+    r.y = anchor->y + anchor->h;
+    room = (screen->y + screen->h - r.y - 2) / row_h;
+    rows = count < room ? count : room;
+    if (rows < 1)
+        rows = 1;
+    r.h = rows * row_h + 2;
+    return r;
+}
+
+int popup_row(const Rect *popup, int row_h, int x, int y)
+{
+    int row;
+
+    if (!rect_contains(popup, x, y) || y < popup->y + 1)
+        return -1;
+    row = (y - popup->y - 1) / row_h;
+    return row < (popup->h - 2) / row_h ? row : -1;
+}

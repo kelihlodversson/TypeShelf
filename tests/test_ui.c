@@ -274,6 +274,36 @@ static void test_viewmodel(void)
     char buf[64];
     WinState ws;
 
+    /* the popup sits under its anchor and stays on the screen */
+    {
+        Rect anchor = { 10, 20, 60, 16 };
+        Rect screen = { 0, 0, 320, 200 };
+        Rect pop = popup_rect(&anchor, 40, 10, 3, &screen);
+
+        CHECK_INT(pop.x, 10);
+        CHECK_INT(pop.y, 36);
+        CHECK_INT(pop.w, 60);
+        CHECK_INT(pop.h, 32);
+        CHECK_INT(popup_row(&pop, 10, 12, 37), 0);
+        CHECK_INT(popup_row(&pop, 10, 12, 47), 1);
+        CHECK_INT(popup_row(&pop, 10, 12, 57), 2);
+        CHECK_INT(popup_row(&pop, 10, 12, 36), -1);     /* the border */
+        CHECK_INT(popup_row(&pop, 10, 5, 40), -1);
+        CHECK_INT(popup_row(&pop, 10, 12, 80), -1);
+        pop = popup_rect(&anchor, 100, 10, 3, &screen);
+        CHECK_INT(pop.w, 100);
+        anchor.x = 300;
+        pop = popup_rect(&anchor, 100, 10, 3, &screen);
+        CHECK_INT(pop.x, 220);                          /* pushed back inside */
+        anchor.x = 10;
+        anchor.y = 170;
+        pop = popup_rect(&anchor, 40, 10, 30, &screen);
+        CHECK_INT(pop.h, 2 + 10 * ((200 - 186 - 2) / 10));  /* only the rows that fit */
+        anchor.y = 195;
+        pop = popup_rect(&anchor, 40, 10, 5, &screen);
+        CHECK_INT(pop.h, 12);                           /* at least one */
+    }
+
     /* the repertoire skips the controls, the space and DEL */
     CHECK_INT(repertoire_count(), 94 + 128);
     CHECK_INT(repertoire_char(0), 33);

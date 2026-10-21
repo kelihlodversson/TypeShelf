@@ -102,6 +102,16 @@ extern const char *const specimen_preview[PREVIEW_LINES];
 int repertoire_count(void);
 int repertoire_char(int index);        /* the character code, or -1 out of range */
 
+/* ---- the style pulldown's popup ---- */
+
+/* The popup's rectangle: below anchor, at least min_w wide, one row_h per
+ * item, kept inside screen; with too little room below, the rows that fit
+ * (at least one) are shown. */
+Rect popup_rect(const Rect *anchor, int min_w, int row_h, int count, const Rect *screen);
+
+/* the row at a screen point, or -1 outside the popup */
+int popup_row(const Rect *popup, int row_h, int x, int y);
+
 /* the style after moving by delta in a family of count styles, staying inside */
 int style_step(int current, int delta, int count);
 

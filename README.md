@@ -22,8 +22,10 @@ over gemlib and CI are in place, and so are the menu bar, windows that follow
 the AES (redraw, move, resize, full, close), the toolbar with its zoom slider,
 and the three overview views: Icons (a tile per family), Samples (a pangram in
 each family) and List (a tree of families that expand to their styles).  Click
-or use the arrow keys to select, double-click or Return to open a family (the
-single-font views come next), and scroll with the window's slider.  Install
+or use the arrow keys to select, double-click or Return to open a family: its
+Specimen shows a preview at the zoom size and the font's characters, with a
+style pulldown (or Left and Right) to pick the style, and its Samples show a
+card per style.  Back or Esc returns, and the window's slider scrolls.  Install
 Font and the full About dialog are still to come.  The design is in
 [docs/superpowers/specs/2026-10-20-typeshelf-design.md](docs/superpowers/specs/2026-10-20-typeshelf-design.md).
 
