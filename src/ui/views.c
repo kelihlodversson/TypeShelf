@@ -19,15 +19,53 @@ typedef struct {
     int row_h;                  /* a List row */
 } Metrics;
 
-/* the labels' font: the system font, black */
+/* the labels' font: the system font, black; the Icons view's tiles use its
+ * smallest size (6x6 on the Atari fonts) to fit their text.  metrics() sets
+ * which, and every entry point calls it first. */
+#define SMALL_PT    8
+
+static int small_labels;
+
 static void chrome(const UiEnv *env)
 {
     short a, b, c, d;
 
     vst_font(env->vh, env->sys_font);
-    vst_height(env->vh, env->sys_char_h, &a, &b, &c, &d);
+    if (small_labels)
+        vst_point(env->vh, SMALL_PT, &a, &b, &c, &d);
+    else
+        vst_height(env->vh, env->sys_char_h, &a, &b, &c, &d);
     vst_effects(env->vh, 0);
     vst_color(env->vh, 1);
+}
+
+/* the label font's cell */
+static void label_cell(const UiEnv *env, int *cw, int *ch)
+{
+    short a, b, c, d;
+
+    *cw = env->cell_w;
+    *ch = env->cell_h;
+    if (small_labels) {
+        vst_font(env->vh, env->sys_font);
+        vst_point(env->vh, SMALL_PT, &a, &b, &c, &d);
+        if (c > 0 && d > 0) {
+            *cw = c;
+            *ch = d;
+        }
+    }
+}
+
+/* the name to show: the system font's faces are named for one size ("6x6
+ * system font"), but all its sizes belong to it */
+static const char *display_name(const UiEnv *env, const FontFamily *f)
+{
+    int i;
+
+    for (i = 0; i < f->style_count; i++)
+        if (f->styles[i].id == env->sys_font)
+            return "System Font";
+    return f->name;
 }
 
 /* a family's default style at pt points; the cell it gives */
@@ -92,15 +130,15 @@ static void metrics(const UiEnv *env, const Window *w, Metrics *m)
 {
     const FontList *list = env->fonts;
 
-    m->cw = env->cell_w;
-    m->ch = env->cell_h;
+    small_labels = w->state.view == VIEW_ICONS;
+    label_cell(env, &m->cw, &m->ch);
     m->glyph_w = m->cw;
     m->glyph_h = m->ch;
     /* the List only uses the system font */
     if (list != NULL && w->state.view != VIEW_LIST)
         preview_cell(env, list, w->state.zoom_pt, &m->glyph_w, &m->glyph_h);
     m->block_h = m->glyph_h + 2 * PAD + 2 * (m->ch + 2);
-    m->tile_w = 12 * m->cw + 2 * PAD;
+    m->tile_w = (small_labels ? 16 : 12) * m->cw + 2 * PAD;
     if (m->tile_w < 2 * m->glyph_w + 4 * PAD)
         m->tile_w = 2 * m->glyph_w + 4 * PAD;
     m->row_h = m->ch + 2;
@@ -205,7 +243,7 @@ static void draw_tile(const UiEnv *env, const Window *w, const Metrics *m, const
     chrome(env);
     sample_text(env, w, f, r, clip, r->x + (r->w - width) / 2, r->y + PAD, "Aa", color);
     vst_color(env->vh, (short)color);
-    centered(env, m, r, r->y + r->h - 2 * (m->ch + 2) - 2, f->name);
+    centered(env, m, r, r->y + r->h - 2 * (m->ch + 2) - 2, display_name(env, f));
     style_count_text(f->style_count, count, sizeof count);
     centered(env, m, r, r->y + r->h - (m->ch + 2) - 2, count);
     vst_color(env->vh, 1);
@@ -223,7 +261,7 @@ static void draw_card(const UiEnv *env, const Window *w, const Metrics *m, const
     vst_color(env->vh, (short)color);
     style_count_text(f->style_count, count, sizeof count);
     n = (int)strlen(count);
-    label(env->vh, r->x + PAD, r->y + PAD, f->name, (r->w - 3 * PAD - n * m->cw) / m->cw);
+    label(env->vh, r->x + PAD, r->y + PAD, display_name(env, f), (r->w - 3 * PAD - n * m->cw) / m->cw);
     label(env->vh, r->x + r->w - PAD - n * m->cw, r->y + PAD, count, n);
     sample_text(env, w, f, r, clip, r->x + PAD, r->y + PAD + m->ch + 2, sample_pangram, color);
     vst_color(env->vh, (short)color);
@@ -277,7 +315,7 @@ static void draw_list_row(const UiEnv *env, const Metrics *m, const FontList *li
         vst_color(vh, (short)(selected && lr.style < 0 ? 0 : 1));
         if (lr.style < 0) {
             draw_text(vh, r->x + m->cw, r->y + 1, expanded != NULL && expanded[lr.family] ? "-" : "+");
-            label(vh, x_name, r->y + 1, f->name, chars_name);
+            label(vh, x_name, r->y + 1, display_name(env, f), chars_name);
             style_count_text(f->style_count, text, sizeof text);
             draw_text(vh, x_styles, r->y + 1, text);
             font_format_text(formats_of(f), text, sizeof text);
