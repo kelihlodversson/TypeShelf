@@ -41,7 +41,7 @@ int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const
 {
     short vh = env->vh;
     int row_h = env->cell_h + 2;
-    int i, longest = 0, rows, top, sel = -1, result = -1, prev_down = 1, last_x = -1, last_y = -1;
+    int i, longest = 0, rows, top, sel = -1, result = -1, prev_down = 1, last_x = -1, last_y = -1, keys = 0;
     Rect pop;
     EVMULT_IN in;
     EVMULT_OUT out;
@@ -80,7 +80,7 @@ int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const
     in.emi_tlow = TICK_MS;
     for (;;) {
         short mx, my, mb;
-        int row, down, want = sel, newtop = top;
+        int row, down, want = sel, newtop = top, moved;
         short events = evnt_multi_fast(&in, msg, &out);
 
         if (events & MU_KEYBD) {
@@ -92,26 +92,44 @@ int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const
                 result = sel;
                 break;
             }
-            if (scan == SCAN_UP)
-                want = sel < 0 ? count - 1 : sel - 1;
-            else if (scan == SCAN_DOWN)
-                want = sel < 0 ? 0 : sel + 1;
-            if (want < 0)
-                want = 0;
-            if (want > count - 1)
-                want = count - 1;
-            if (want < newtop)
-                newtop = want;
-            if (want >= newtop + rows)
-                newtop = want - rows + 1;
+            if (scan == SCAN_UP || scan == SCAN_DOWN) {
+                if (scan == SCAN_UP)
+                    want = sel < 0 ? count - 1 : sel - 1;
+                else
+                    want = sel < 0 ? 0 : sel + 1;
+                if (want < 0)
+                    want = 0;
+                if (want > count - 1)
+                    want = count - 1;
+                if (want < newtop)
+                    newtop = want;
+                if (want >= newtop + rows)
+                    newtop = want - rows + 1;
+                keys = 1;               /* the keyboard leads until the pointer moves */
+            }
         }
         vq_mouse(vh, &mb, &mx, &my);
         down = mb & 1;
         row = popup_row(&pop, row_h, mx, my);
-        if (!(events & MU_KEYBD) && (mx != last_x || my != last_y || row == 0 || row == rows - 1)) {
-            /* the pointer drives the highlight; resting on the first or last row scrolls the rest into view */
-            last_x = mx;
-            last_y = my;
+        moved = mx != last_x || my != last_y;
+        last_x = mx;
+        last_y = my;
+        /* a press or release is decided on the rows as drawn, before any scrolling */
+        if (prev_down && !down) {
+            /* released: over a row after a drag chooses it; a plain click's release lands on the control */
+            if (row >= 0) {
+                result = top + row;
+                break;
+            }
+        } else if (!prev_down && down) {
+            result = row >= 0 ? top + row : -1;     /* a press on a row chooses it, anywhere else cancels */
+            break;
+        }
+        prev_down = down;
+        if (moved)
+            keys = 0;
+        if (!keys) {
+            /* the pointer leads; resting on the first or last row scrolls the rest into view */
             want = row >= 0 ? top + row : -1;
             if (row == 0 && top > 0)
                 newtop = top - 1;
@@ -127,17 +145,6 @@ int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const
             draw_all(env, &pop, row_h, rows, top, item, ctx, current, sel);
             v_show_c(vh, 1);
         }
-        if (prev_down && !down) {
-            /* released: over a row after a drag chooses it; a plain click's release lands on the control */
-            if (row >= 0) {
-                result = top + row;
-                break;
-            }
-        } else if (!prev_down && down) {
-            result = row >= 0 ? top + row : -1;     /* a press on a row chooses it, anywhere else cancels */
-            break;
-        }
-        prev_down = down;
     }
     for (;;) {                          /* let go before the main loop looks at the button */
         short mx, my, mb;

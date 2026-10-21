@@ -316,7 +316,7 @@ static struct {
 static void repertoire_of(const UiEnv *env, const Window *w, const FontFamily *f, int style, const short **codes,
                           int *count)
 {
-    int dw, dh, c, first, last, cap;
+    int dw, dh, c, first, last, pass;
     short min, max, dist[5], width, eff[3];
 
     if (!(rep_cache.valid && rep_cache.list == env->fonts && rep_cache.family == w->state.family &&
@@ -334,17 +334,27 @@ static void repertoire_of(const UiEnv *env, const Window *w, const FontFamily *f
             /* the VDI reported the 8-bit range under the Unicode map: search the whole plane instead */
             last = 0xFFFF;
         }
-        cap = last >= first ? last - first + 1 : 0;
-        if (cap > 0)
-            rep_cache.codes = malloc((size_t)cap * sizeof(short));
-        if (rep_cache.codes != NULL) {
+        /* count first, so a whole-plane search keeps only what the font has */
+        for (pass = 0; pass < 2; pass++) {
+            if (pass == 1) {
+                if (rep_cache.count == 0)
+                    break;
+                rep_cache.codes = malloc((size_t)rep_cache.count * sizeof(short));
+                if (rep_cache.codes == NULL) {
+                    rep_cache.count = 0;
+                    break;
+                }
+                rep_cache.count = 0;
+            }
             for (c = repertoire_next(first, last, -1, env->have_ucs2); c >= 0;
                  c = repertoire_next(first, last, c, env->have_ucs2)) {
                 short cw, l, r;
 
                 if (env->have_ucs2 && vqt_width(env->vh, (short)c, &cw, &l, &r) == -1)
                     continue;
-                rep_cache.codes[rep_cache.count++] = (short)c;
+                if (pass == 1)
+                    rep_cache.codes[rep_cache.count] = (short)c;
+                rep_cache.count++;
             }
         }
         if (env->have_ucs2)
@@ -456,19 +466,33 @@ static void draw_specimen(const UiEnv *env, const Window *w, const Metrics *m, c
     const FontFamily *f = single_family(env, w);
     Specimen sp;
     int oy = content->y - w->state.scroll_y;
-    int dw, dh, i;
+    int dw, dh, i, first_i, end_i;
     Rect r, vis;
 
     if (f == NULL)
         return;
     specimen_layout(env, w, m, content->w, &sp);
-    draw_text(env->vh, content->x + GAP, oy + GAP, "Preview");
-    preview_rows(env, w, f, content->w - 2 * GAP, content->x + GAP, oy + sp.preview_y, sp.line_h, 1);
-    draw_text(env->vh, content->x + GAP, oy + sp.rep_label_y, env->have_ucs2 ? "Repertoire (Unicode)" : "Repertoire");
+    /* keep far-off coordinates away from the VDI: they would wrap as shorts */
+    if (oy + GAP + m->ch > clip->y && oy + GAP < clip->y + clip->h)
+        draw_text(env->vh, content->x + GAP, oy + GAP, "Preview");
+    if (oy + sp.preview_y + sp.rows * sp.line_h > clip->y && oy + sp.preview_y < clip->y + clip->h)
+        preview_rows(env, w, f, content->w - 2 * GAP, content->x + GAP, oy + sp.preview_y, sp.line_h, 1);
+    if (oy + sp.rep_label_y + m->ch > clip->y && oy + sp.rep_label_y < clip->y + clip->h)
+        draw_text(env->vh, content->x + GAP, oy + sp.rep_label_y,
+                  env->have_ucs2 ? "Repertoire (Unicode)" : "Repertoire");
     use_font(env, f, single_style(f, w), REP_PT, &dw, &dh);
     if (env->have_ucs2)
         vst_map_mode(env->vh, MAP_UNICODE);
-    for (i = 0; i < sp.count; i++) {
+    {
+        /* only the grid rows the clip reaches */
+        RowRange rr = layout_visible_rows(clip->y - (oy + sp.rep_y), clip->h, sp.rep.tile_h + sp.rep.gap, sp.rep.rows);
+
+        first_i = (rr.first > 0 ? rr.first - 1 : 0) * sp.rep.cols;
+        end_i = (rr.end + 1) * sp.rep.cols;
+        if (end_i > sp.count)
+            end_i = sp.count;
+    }
+    for (i = first_i; i < end_i; i++) {
         Rect t = grid_tile(&sp.rep, i);
         char ch[2];
         short ext[8];
