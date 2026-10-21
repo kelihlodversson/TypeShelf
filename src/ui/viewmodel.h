@@ -91,4 +91,18 @@ void window_title_text(const FontList *list, const WinState *ws, int sys_font, c
 /* the line the Samples view shows at the zoom size */
 extern const char sample_pangram[];
 
+/* the Specimen's preview: three lines, each wrapped to the window's width */
+#define PREVIEW_LINES 3
+extern const char *const specimen_preview[PREVIEW_LINES];
+
+/* ---- Specimen: the repertoire ---- */
+
+/* the characters of the repertoire grid: 33 to 126 and 128 to 255 (127 is
+ * DEL, 0 to 32 are controls and the space) */
+int repertoire_count(void);
+int repertoire_char(int index);        /* the character code, or -1 out of range */
+
+/* the style after moving by delta in a family of count styles, staying inside */
+int style_step(int current, int delta, int count);
+
 #endif

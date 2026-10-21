@@ -274,6 +274,19 @@ static void test_viewmodel(void)
     char buf[64];
     WinState ws;
 
+    /* the repertoire skips the controls, the space and DEL */
+    CHECK_INT(repertoire_count(), 94 + 128);
+    CHECK_INT(repertoire_char(0), 33);
+    CHECK_INT(repertoire_char(93), 126);
+    CHECK_INT(repertoire_char(94), 128);
+    CHECK_INT(repertoire_char(221), 255);
+    CHECK_INT(repertoire_char(222), -1);
+    CHECK_INT(repertoire_char(-1), -1);
+    CHECK_INT(style_step(0, -1, 3), 0);
+    CHECK_INT(style_step(1, 1, 3), 2);
+    CHECK_INT(style_step(2, 1, 3), 2);
+    CHECK_INT(style_step(0, 1, 0), 0);
+
     /* the title says what the window shows */
     winstate_init(&ws);
     window_title_text(&list, &ws, -1, buf, sizeof buf);

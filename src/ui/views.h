@@ -1,5 +1,5 @@
 /*
- * views.h - the overview views: Icons, Samples and List
+ * views.h - the views: Icons, Samples and List, and a family's Specimen and Samples
  *
  * They draw into a window's content area, scrolled by its state.  The model
  * they lay out with is in viewmodel.h.

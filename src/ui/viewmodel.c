@@ -241,3 +241,34 @@ void window_title_text(const FontList *list, const WinState *ws, int sys_font, c
     style_count_text(f->style_count, count, sizeof count);
     snprintf(out, cap, "TypeShelf: %s, %s", family_display_name(f, sys_font), count);
 }
+
+const char *const specimen_preview[PREVIEW_LINES] = {
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    "abcdefghijklmnopqrstuvwxyz",
+    "0123456789"
+};
+
+int repertoire_count(void)
+{
+    return (126 - 33 + 1) + (255 - 128 + 1);
+}
+
+int repertoire_char(int index)
+{
+    if (index < 0 || index >= repertoire_count())
+        return -1;
+    return index < 126 - 33 + 1 ? 33 + index : 128 + (index - (126 - 33 + 1));
+}
+
+int style_step(int current, int delta, int count)
+{
+    int next = current + delta;
+
+    if (count <= 0)
+        return 0;
+    if (next < 0)
+        next = 0;
+    if (next > count - 1)
+        next = count - 1;
+    return next;
+}

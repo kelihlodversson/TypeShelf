@@ -199,33 +199,8 @@ static void draw_toolbar(const UiEnv *env, const Window *w)
         draw_slider(env, w);
 }
 
-static const char *view_name(const WinState *ws)
-{
-    switch (ws->view) {
-    case VIEW_ICONS:            return "Icons";
-    case VIEW_SAMPLES:          return "Samples";
-    case VIEW_LIST:             return "List";
-    case VIEW_SPECIMEN:         return "Specimen";
-    default:                    return "Samples";
-    }
-}
-
-/* what the views will draw: for now, the view and the zoom, in words */
-static void draw_content(const UiEnv *env, const Window *w)
-{
-    Rect c = window_content_rect(w);
-    char line[48];
-    int n = env->fonts != NULL ? env->fonts->family_count : 0;
-
-    draw_box(env->vh, &c, 0, 0);
-    snprintf(line, sizeof line, "%s view, %d pt", view_name(&w->state), w->state.zoom_pt);
-    draw_text(env->vh, c.x + 8, c.y + 8, line);
-    snprintf(line, sizeof line, "%d font famil%s", n, n == 1 ? "y" : "ies");
-    draw_text(env->vh, c.x + 8, c.y + 8 + env->cell_h + 2, line);
-}
-
-/* the views leave the workstation in their own fonts: the toolbar, the
- * placeholder and other windows draw in the system font */
+/* the views leave the workstation in their own fonts: the toolbar and other
+ * windows draw in the system font */
 static void system_text(const UiEnv *env)
 {
     short a, b, c, d;
@@ -254,7 +229,7 @@ void window_draw(const UiEnv *env, Window *w, const Rect *area)
             drawing_clip = clip;
             system_text(env);
             draw_toolbar(env, w);
-            if (w->state.mode == MODE_OVERVIEW) {
+            {
                 Rect content = window_content_rect(w);
                 Rect vclip;
 
@@ -264,8 +239,6 @@ void window_draw(const UiEnv *env, Window *w, const Rect *area)
                     drawing_clip = vclip;
                     view_draw(env, w, &content, &vclip);
                 }
-            } else {
-                draw_content(env, w);
             }
         }
         wind_get_grect(w->handle, WF_NEXTXYWH, &g);
