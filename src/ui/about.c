@@ -121,10 +121,14 @@ void about_show(const AboutFacts *f)
         rsrc_obfix(o, i);
 
     form_center(o, &x, &y, &w, &h);
+    wind_update(BEG_UPDATE);            /* nobody else draws or reads the mouse meanwhile */
+    wind_update(BEG_MCTRL);
     form_dial(FMD_START, 0, 0, 0, 0, x, y, w, h);
     objc_draw(o, 0, 8, x, y, w, h);
     form_do(o, 0);
     o[btn].ob_state &= (unsigned short)~OS_SELECTED;
     form_dial(FMD_FINISH, 0, 0, 0, 0, x, y, w, h);
+    wind_update(END_MCTRL);
+    wind_update(END_UPDATE);
     free(d);
 }
