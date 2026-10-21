@@ -16,6 +16,8 @@
 typedef struct {
     short vh;                   /* the screen workstation to draw with */
     int cell_w, cell_h;         /* the system font's cell */
+    short sys_font;             /* the system font, and its character height, which the labels use */
+    short sys_char_h;
     Rect desk;                  /* the desktop's work area */
     const FontList *fonts;
 } UiEnv;
@@ -27,6 +29,8 @@ typedef struct Window {
     Rect before_full;           /* where "fulled" returns to */
     int fulled;
     char title[40];
+    unsigned char *expanded;    /* List: which families show their styles */
+    int expanded_n;
     struct Window *next;
 } Window;
 
@@ -54,6 +58,15 @@ ToolbarItem window_toolbar_hit(const Window *w, int x, int y);
 
 /* Follow the mouse over the zoom slider until the button goes up. */
 void window_drag_zoom(const UiEnv *env, Window *w, int x);
+
+/* Which families the List shows the styles of, one flag per family; resized
+ * (and cleared) if the number of families changed.  NULL if there is no
+ * memory, which reads as none expanded. */
+unsigned char *window_expanded(Window *w, int family_count);
+
+/* Scroll the view to scroll_y pixels (kept in range), redrawing the content and
+ * moving the slider if that changed anything. */
+void window_scroll_to(const UiEnv *env, Window *w, int scroll_y);
 
 /* move or resize to r; keeps the window at least a usable size */
 void window_set_rect(const UiEnv *env, Window *w, const Rect *r);

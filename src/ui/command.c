@@ -10,6 +10,10 @@
 #define SCAN_RETURN     0x1C
 #define SCAN_N          0x31
 #define SCAN_ENTER      0x72    /* the keypad's */
+#define SCAN_UP         0x48
+#define SCAN_LEFT       0x4B
+#define SCAN_RIGHT      0x4D
+#define SCAN_DOWN       0x50
 
 Command command_from_key(unsigned short key, unsigned short kmeta)
 {
@@ -31,6 +35,10 @@ Command command_from_key(unsigned short key, unsigned short kmeta)
     case SCAN_ESC:      return CMD_BACK;
     case SCAN_RETURN:
     case SCAN_ENTER:    return CMD_OPEN;
+    case SCAN_UP:       return CMD_UP;
+    case SCAN_DOWN:     return CMD_DOWN;
+    case SCAN_LEFT:     return CMD_LEFT;
+    case SCAN_RIGHT:    return CMD_RIGHT;
     default:            return CMD_NONE;
     }
 }

@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "layout/layout.h"
+#include "ui/viewmodel.h"
+#include "ui/draw.h"
 #include "ui/icons.h"
+#include "ui/views.h"
 #include "ui/window.h"
 
 #define WINDOW_PARTS    (NAME | CLOSER | FULLER | MOVER | SIZER | UPARROW | DNARROW | VSLIDE)
@@ -57,6 +60,7 @@ Window *window_open(const UiEnv *env, int cascade)
 
 void window_close(Window *w)
 {
+    free(w->expanded);
     wind_close(w->handle);
     wind_delete(w->handle);
     free(w);
@@ -91,6 +95,7 @@ void window_refresh(const UiEnv *env, Window *w)
 {
     Rect work = window_work(w);
     Rect content;
+    int content_h;
     const FontList *list = env->fonts;
 
     toolbar_layout(&w->tb, work.w, env->cell_w, w->state.mode);
@@ -102,59 +107,17 @@ void window_refresh(const UiEnv *env, Window *w)
         snprintf(w->title, sizeof w->title, " Type Shelf ");
     wind_set_str(w->handle, WF_NAME, w->title);
 
-    /* nothing to scroll until a view has content: the slider shows it all */
     content = window_content_rect(w);
-    wind_set_int(w->handle, WF_VSLSIZE, (short)scroll_slider_size(0, content.h));
-    wind_set_int(w->handle, WF_VSLIDE, (short)scroll_slider_pos(w->state.scroll_y, 0, content.h));
+    content_h = view_content_height(env, w);
+    w->state.scroll_y = scroll_clamp(w->state.scroll_y, content_h, content.h);
+    wind_set_int(w->handle, WF_VSLSIZE, (short)scroll_slider_size(content_h, content.h));
+    wind_set_int(w->handle, WF_VSLIDE, (short)scroll_slider_pos(w->state.scroll_y, content_h, content.h));
 }
 
 /* ---- drawing ---------------------------------------------------------- */
 
-static void clip_to(short vh, const Rect *r)
-{
-    short pxy[4];
-
-    pxy[0] = (short)r->x;
-    pxy[1] = (short)r->y;
-    pxy[2] = (short)(r->x + r->w - 1);
-    pxy[3] = (short)(r->y + r->h - 1);
-    vs_clip(vh, 1, pxy);
-}
-
-/* a filled box, with a black outline if outline is set (the VDI draws a
- * perimeter in the fill color, so it is drawn here) */
-static void box(short vh, const Rect *r, int fill_color, int outline)
-{
-    short bar[4], line[10];
-
-    bar[0] = (short)r->x;
-    bar[1] = (short)r->y;
-    bar[2] = (short)(r->x + r->w - 1);
-    bar[3] = (short)(r->y + r->h - 1);
-    vsf_interior(vh, FIS_SOLID);
-    vsf_color(vh, (short)fill_color);
-    vsf_perimeter(vh, 0);
-    v_bar(vh, bar);
-    if (!outline)
-        return;
-    line[0] = bar[0]; line[1] = bar[1];
-    line[2] = bar[2]; line[3] = bar[1];
-    line[4] = bar[2]; line[5] = bar[3];
-    line[6] = bar[0]; line[7] = bar[3];
-    line[8] = bar[0]; line[9] = bar[1];
-    vsl_color(vh, 1);
-    vsl_type(vh, 1);
-    v_pline(vh, 5, line);
-}
-
 /* the part of the window being drawn: the AES draws the icons on its own workstation */
 static Rect drawing_clip;
-
-static void text_at(short vh, int x, int y, const char *s)
-{
-    vst_alignment(vh, 0, 5, &(short){0}, &(short){0});
-    v_gtext(vh, (short)x, (short)y, (char *)s);
-}
 
 /* a button, drawn inverted when it is the view in use */
 static void draw_button(const UiEnv *env, const Window *w, ToolbarItem item, IconId icon, int on)
@@ -165,7 +128,7 @@ static void draw_button(const UiEnv *env, const Window *w, ToolbarItem item, Ico
 
     r.x += work.x;
     r.y += work.y;
-    box(env->vh, &r, 0, 1);
+    draw_box(env->vh, &r, 0, 1);
     icons_draw(icon, size, r.x + (r.w - size) / 2, r.y + (r.h - size) / 2, on, &drawing_clip);
 }
 
@@ -180,7 +143,7 @@ static void draw_style_pulldown(const UiEnv *env, const Window *w)
 
     r.x += work.x;
     r.y += work.y;
-    box(env->vh, &r, 0, 1);
+    draw_box(env->vh, &r, 0, 1);
     if (list != NULL && w->state.family >= 0 && w->state.family < list->family_count) {
         const FontFamily *f = &list->families[w->state.family];
 
@@ -189,8 +152,8 @@ static void draw_style_pulldown(const UiEnv *env, const Window *w)
     }
     snprintf(text, sizeof text, "%.*s", chars, label);
     vst_effects(env->vh, winstate_style_enabled(&w->state) ? 0 : 2);   /* light when disabled */
-    text_at(env->vh, r.x + 3, r.y + (r.h - env->cell_h) / 2, text);
-    text_at(env->vh, r.x + r.w - env->cell_w - 2, r.y + (r.h - env->cell_h) / 2, "\x1f");
+    draw_text(env->vh, r.x + 3, r.y + (r.h - env->cell_h) / 2, text);
+    draw_text(env->vh, r.x + r.w - env->cell_w - 2, r.y + (r.h - env->cell_h) / 2, "\x1f");
     vst_effects(env->vh, 0);
 }
 
@@ -204,8 +167,8 @@ static void draw_slider(const UiEnv *env, const Window *w)
     track.y += work.y;
     thumb.x += work.x;
     thumb.y += work.y;
-    box(env->vh, &track, 0, 1);
-    box(env->vh, &thumb, 1, 1);
+    draw_box(env->vh, &track, 0, 1);
+    draw_box(env->vh, &thumb, 1, 1);
 }
 
 static void draw_toolbar(const UiEnv *env, const Window *w)
@@ -215,7 +178,7 @@ static void draw_toolbar(const UiEnv *env, const Window *w)
     Rect bar = window_toolbar_rect(w);
     short line[4];
 
-    box(env->vh, &bar, 0, 0);
+    draw_box(env->vh, &bar, 0, 0);
     line[0] = (short)bar.x;
     line[1] = (short)(bar.y + bar.h - 1);
     line[2] = (short)(bar.x + bar.w - 1);
@@ -258,11 +221,11 @@ static void draw_content(const UiEnv *env, const Window *w)
     char line[48];
     int n = env->fonts != NULL ? env->fonts->family_count : 0;
 
-    box(env->vh, &c, 0, 0);
+    draw_box(env->vh, &c, 0, 0);
     snprintf(line, sizeof line, "%s view, %d pt", view_name(&w->state), w->state.zoom_pt);
-    text_at(env->vh, c.x + 8, c.y + 8, line);
+    draw_text(env->vh, c.x + 8, c.y + 8, line);
     snprintf(line, sizeof line, "%d font famil%s", n, n == 1 ? "y" : "ies");
-    text_at(env->vh, c.x + 8, c.y + 8 + env->cell_h + 2, line);
+    draw_text(env->vh, c.x + 8, c.y + 8 + env->cell_h + 2, line);
 }
 
 void window_draw(const UiEnv *env, Window *w, const Rect *area)
@@ -279,10 +242,16 @@ void window_draw(const UiEnv *env, Window *w, const Rect *area)
     while (g.g_w > 0 && g.g_h > 0) {
         r = from_grect(&g);
         if (rect_intersect(&r, area, &clip)) {
-            clip_to(vh, &clip);
+            draw_clip(vh, &clip);
             drawing_clip = clip;
             draw_toolbar(env, w);
-            draw_content(env, w);
+            if (w->state.mode == MODE_OVERVIEW) {
+                Rect content = window_content_rect(w);
+
+                view_draw(env, w, &content, &clip);
+            } else {
+                draw_content(env, w);
+            }
         }
         wind_get_grect(w->handle, WF_NEXTXYWH, &g);
     }
@@ -325,6 +294,7 @@ void window_drag_zoom(const UiEnv *env, Window *w, int x)
             break;
         }
     }
+    window_refresh(env, w);                     /* the zoom changed what the views lay out */
     window_draw(env, w, &(Rect){ bar.x, bar.y + bar.h, bar.w, window_work(w).h - bar.h });
 }
 
@@ -347,4 +317,26 @@ void window_set_rect(const UiEnv *env, Window *w, const Rect *r)
 
         window_draw(env, w, &work);
     }
+}
+
+unsigned char *window_expanded(Window *w, int family_count)
+{
+    if (w->expanded_n != family_count) {
+        free(w->expanded);
+        w->expanded = family_count > 0 ? calloc((size_t)family_count, 1) : NULL;
+        w->expanded_n = w->expanded != NULL ? family_count : 0;
+    }
+    return w->expanded;
+}
+
+void window_scroll_to(const UiEnv *env, Window *w, int scroll_y)
+{
+    Rect content = window_content_rect(w);
+    int before = w->state.scroll_y;
+
+    w->state.scroll_y = scroll_clamp(scroll_y, view_content_height(env, w), content.h);
+    if (w->state.scroll_y == before)
+        return;
+    window_refresh(env, w);
+    window_draw(env, w, &content);
 }
