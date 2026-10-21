@@ -44,9 +44,9 @@ All on pTOS (master, with its built-in scalable fonts) under QEMU `virt-arm`, in
 
 ![The Specimen view of Arial](docs/images/screenshot-specimen.png)
 
-**A family's Samples**: a card for each style.
+**A family's Samples**: a card for each style (Arial, with Regular, Italic and Bold).
 
-![The Samples of one family](docs/images/screenshot-family-samples.png)
+![The Samples of Arial: a card for each of its three styles](docs/images/screenshot-family-samples.png)
 
 **About**: the OS, the GDOS and its vector-font variant, the screen, and the font counts and features.
 
