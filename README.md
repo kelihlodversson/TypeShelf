@@ -26,30 +26,50 @@ Font and the full About dialog are still to come.  The design is in
 
 ## Screenshots
 
-All on pTOS (master, with its built-in scalable fonts) under QEMU `virt-arm`, in 32-bit colour, with the system font and four TrueType fonts installed.
+On the left: pTOS (master, with its built-in scalable fonts) under QEMU `virt-arm`, in 32-bit colour, with the system font and four TrueType fonts (Arial with Regular, Italic and Bold).
+
+On the right: a legacy set-up, EmuTOS under Hatari in ST mono (640x400) with the 1987 Atari GDOS and its bitmap fonts (Dutch, Swiss and Typewriter, from the Microsoft Write distribution's GDOS disk).
 
 **Icons**: a tile for each family, with its name and number of styles.
 
-![The Icons view: a tile for each installed family](docs/images/screenshot-icons.png)
+<table><tr>
+<td><img src="docs/images/screenshot-icons.png" alt="The Icons view on pTOS"></td>
+<td><img src="docs/images/legacy-icons.png" alt="The Icons view on EmuTOS with Atari GDOS"></td>
+</tr></table>
 
 **Samples**: a pangram in each family.
 
-![The Samples view: a card with a pangram for each family](docs/images/screenshot-samples.png)
+<table><tr>
+<td><img src="docs/images/screenshot-samples.png" alt="The Samples view on pTOS"></td>
+<td><img src="docs/images/legacy-samples.png" alt="The Samples view on EmuTOS with Atari GDOS"></td>
+</tr></table>
 
 **List**: a table of families with their number of styles and format; each expands to its styles.
 
-![The List view: typeface, styles and format](docs/images/screenshot-list.png)
+<table><tr>
+<td><img src="docs/images/screenshot-list.png" alt="The List view on pTOS"></td>
+<td><img src="docs/images/legacy-list.png" alt="The List view on EmuTOS with Atari GDOS"></td>
+</tr></table>
 
-**Specimen**: one font, with a preview at the zoom size and the font's Unicode characters.
+**Specimen**: one font, with a preview at the zoom size and the font's characters.
 
-![The Specimen view of Arial](docs/images/screenshot-specimen.png)
+<table><tr>
+<td><img src="docs/images/screenshot-specimen.png" alt="The Specimen view on pTOS"></td>
+<td><img src="docs/images/legacy-specimen.png" alt="The Specimen view on EmuTOS with Atari GDOS"></td>
+</tr></table>
 
-**A family's Samples**: a card for each style (Arial, with Regular, Italic and Bold).
+**A family's Samples**: a card for each style.
 
-![The Samples of Arial: a card for each of its three styles](docs/images/screenshot-family-samples.png)
+<table><tr>
+<td><img src="docs/images/screenshot-family-samples.png" alt="The Samples of one family on pTOS"></td>
+<td><img src="docs/images/legacy-family.png" alt="The Samples of one family on EmuTOS with Atari GDOS"></td>
+</tr></table>
 
 **About**: the OS, the GDOS and its vector-font variant, the screen, and the font counts and features.
 
-![The About dialog](docs/images/screenshot-about.png)
+<table><tr>
+<td><img src="docs/images/screenshot-about.png" alt="The About dialog on pTOS"></td>
+<td><img src="docs/images/legacy-about.png" alt="The About dialog on EmuTOS with Atari GDOS"></td>
+</tr></table>
 
 Licence: GPL-2.0-or-later.
