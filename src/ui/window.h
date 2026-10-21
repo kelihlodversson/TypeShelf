@@ -20,7 +20,7 @@ typedef struct {
     short sys_char_h;
     Rect desk;                  /* the desktop's work area */
     const FontList *fonts;
-    int have_arbpt;             /* the GDOS answers vst_arbpt (NVDI, SpeedoGDOS) */
+    int have_arbpt;             /* the GDOS answers vst_arbpt (probed at start-up) */
 } UiEnv;
 
 typedef struct Window {

@@ -12,6 +12,7 @@ typedef struct {
     short handle;       /* virtual screen workstation */
     short count;        /* number of faces */
     int have_ext;       /* vqt_ext_name() answers (NVDI, SpeedoGDOS) */
+    int have_arbpt;     /* vst_arbpt() sizes a vector face continuously */
     int have_xfnt;      /* vqt_xfntinfo() answers (NVDI 3.02 and later) */
 } GemSource;
 

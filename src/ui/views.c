@@ -5,10 +5,8 @@
 #include "ui/draw.h"
 #include "ui/viewmodel.h"
 #include "ui/views.h"
+#include "vdi_if/vdi_extra.h"
 
-/* NVDI's and the built-in GDOS's arbitrary point size; gemlib has the call
- * but no prototype */
-short vst_arbpt(short handle, short point, short *wchar, short *hchar, short *wcell, short *hcell);
 
 #define PAD     4       /* inside a tile, a card or a row */
 #define GAP     8       /* between tiles and cards */
