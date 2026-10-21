@@ -149,8 +149,8 @@ static void draw_style_pulldown(const UiEnv *env, const Window *w)
     snprintf(text, sizeof text, "%.*s", chars, label);
     vst_effects(env->vh, winstate_style_enabled(&w->state) ? 0 : 2);   /* light when disabled */
     draw_text(env->vh, r.x + 3, r.y + (r.h - env->cell_h) / 2, text);
-    draw_text(env->vh, r.x + r.w - env->cell_w - 2, r.y + (r.h - env->cell_h) / 2, "\x1f");
     vst_effects(env->vh, 0);
+    draw_down_arrow(env->vh, r.x + r.w - 9, r.y + (r.h - 5) / 2, 7);
 }
 
 static void draw_slider(const UiEnv *env, const Window *w)

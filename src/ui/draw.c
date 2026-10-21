@@ -35,6 +35,22 @@ void draw_box(short vh, const Rect *r, int fill_color, int outline)
     v_pline(vh, 5, line);
 }
 
+void draw_down_arrow(short vh, int x, int y, int w)
+{
+    short line[4];
+    int i;
+
+    vsl_color(vh, 1);
+    vsl_type(vh, 1);
+    for (i = 0; i <= w / 2; i++) {
+        line[0] = (short)(x + i);
+        line[1] = (short)(y + i);
+        line[2] = (short)(x + w - 1 - i);
+        line[3] = (short)(y + i);
+        v_pline(vh, 2, line);
+    }
+}
+
 void draw_text(short vh, int x, int y, const char *s)
 {
     short dummy_h, dummy_v;

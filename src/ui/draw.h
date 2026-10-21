@@ -15,6 +15,10 @@ void draw_clip(short vh, const Rect *r);
 void draw_box(short vh, const Rect *r, int fill_color, int outline);
 
 /* text with its top left at x, y, in the current font and color */
+/* a small black triangle pointing down, w wide (odd), its top left at x, y;
+ * drawn with lines, so it does not depend on a font's glyphs */
+void draw_down_arrow(short vh, int x, int y, int w);
+
 void draw_text(short vh, int x, int y, const char *s);
 
 /* the same for one UCS-2 character, with the VDI in Unicode mode */
