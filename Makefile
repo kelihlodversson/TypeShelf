@@ -136,10 +136,12 @@ build/m68k/TYPESHLF.PRG: $(M68K_OBJ) $(GEMLIB_A) $(LIBCMINI_A) $(LIBCMINI_CRT)
 
 ARM_PREFIX   ?= arm-none-eabi-
 ARM_CC        = $(ARM_PREFIX)gcc
-ARM_ABI       = -mfloat-abi=hard -mfpu=vfp -mword-relocations
+# the same CPU flags pTOS builds its own ARM programs with
+ARM_ABI       = -march=armv7-a -mtune=cortex-a7 -marm -mfpu=neon-vfpv4 -mfloat-abi=hard \
+    -mword-relocations
 ARM_LIBGEM    = build/arm/lib/libgem.a
 ARM_LIBCMINI  = build/arm/lib/libcmini.a
-ARM_CRT       = build/arm/lib/crt0.o
+ARM_CRT       = build/arm/lib/minicrt0.o
 
 # gemlib's own include/arm directory has the compiler.h its headers need
 ARM_CFLAGS = $(STD) $(WARN) -Werror -O2 -ffreestanding $(ARM_ABI) \
@@ -158,7 +160,7 @@ $(ARM_LIBCMINI): $(LIBCMINI_REV)
 	$(LIBCMINI_COPY) build/arm/libcmini/
 	$(MAKE) -C build/arm/libcmini ptos_arm_defconfig
 	$(MAKE) -C build/arm/libcmini dirs libs startups
-	cp build/arm/libcmini/build/libcmini.a build/arm/libcmini/build/objs/crt0.o $(dir $@)
+	cp build/arm/libcmini/build/libcmini.a build/arm/libcmini/build/objs/minicrt0.o $(dir $@)
 
 $(ARM_CRT): $(ARM_LIBCMINI)
 
@@ -166,8 +168,10 @@ build/arm/%.o: src/%.c $(wildcard src/*/*.h) $(GEMLIB_H)
 	@mkdir -p $(dir $@)
 	$(ARM_CC) $(ARM_CFLAGS) -c $< -o $@
 
+# -q keeps the relocations in the file: pTOS loads a program wherever there is
+# room and applies them (doc/elfload.txt in pTOS), so it must not be stripped
 build/arm/TYPESHLF.PRG: $(ARM_OBJ) $(ARM_LIBGEM) $(ARM_LIBCMINI) $(ARM_CRT)
-	$(ARM_CC) $(ARM_ABI) -nostdlib $(ARM_CRT) $(ARM_OBJ) \
+	$(ARM_CC) $(ARM_ABI) -nostdlib -Wl,-q -Wl,-Ttext=0 -Wl,-e_start $(ARM_CRT) $(ARM_OBJ) \
 	    -Lbuild/arm/lib -lcmini -lgem -lgcc -lcmini -o $@
 
 arm: build/arm/TYPESHLF.PRG build/arm/TYPESHLF.RSC
