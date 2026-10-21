@@ -7,6 +7,7 @@
 #define GAP         2       /* between buttons */
 #define GROUP_GAP   6       /* between groups of controls */
 #define MIN_TRACK   24
+#define MAX_TRACK   160     /* wider windows leave the slider this wide, at the right */
 #define MIN_STYLE   4       /* the style pulldown shrinks to this many cells */
 
 static void place(ToolbarLayout *tl, ToolbarItem item, int x, int y, int w, int h)
@@ -49,8 +50,10 @@ void toolbar_layout(ToolbarLayout *tl, int work_w, int char_w, WinMode mode)
     x += GROUP_GAP - GAP;
 
     track_w = work_w - MARGIN - x;
+    if (track_w > MAX_TRACK)
+        track_w = MAX_TRACK;
     if (track_w >= MIN_TRACK)
-        place(tl, TB_SLIDER, x, 2 + (bw - 10) / 2, track_w, 10);
+        place(tl, TB_SLIDER, work_w - MARGIN - track_w, 2 + (bw - 10) / 2, track_w, 10);
 }
 
 ToolbarItem toolbar_hit(const ToolbarLayout *tl, int x, int y)

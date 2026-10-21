@@ -145,7 +145,11 @@ static void test_toolbar(void)
     CHECK(tl.present[TB_SLIDER]);
     CHECK(tl.rect[TB_VIEW2].x > tl.rect[TB_VIEW1].x + tl.rect[TB_VIEW1].w - 1);
     CHECK(tl.rect[TB_SLIDER].x > tl.rect[TB_VIEW3].x + tl.rect[TB_VIEW3].w);
-    CHECK(tl.rect[TB_SLIDER].x + tl.rect[TB_SLIDER].w <= 300 - 4 + 0);
+    CHECK_INT(tl.rect[TB_SLIDER].x + tl.rect[TB_SLIDER].w, 300 - 4);       /* right aligned */
+    toolbar_layout(&tl, 900, 8, MODE_OVERVIEW);
+    CHECK_INT(tl.rect[TB_SLIDER].w, 160);                                  /* and not wider */
+    CHECK_INT(tl.rect[TB_SLIDER].x + tl.rect[TB_SLIDER].w, 900 - 4);
+    toolbar_layout(&tl, 300, 8, MODE_OVERVIEW);
     CHECK_INT(toolbar_hit(&tl, tl.rect[TB_VIEW2].x + 1, 4), TB_VIEW2);
     CHECK_INT(toolbar_hit(&tl, 0, 0), TB_NONE);
 

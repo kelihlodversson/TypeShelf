@@ -10,11 +10,13 @@
 
 #define PAD     4       /* inside a tile, a card or a row */
 #define GAP     8       /* between tiles and cards */
+#define ICON_GAP 3      /* between an icon's frame and its labels */
 
 typedef struct {
     int cw, ch;                 /* the system font's cell: what the labels use */
     int glyph_w, glyph_h;       /* the largest cell of the zoom size over the families' fonts */
-    int block_h;                /* a tile's or a card's height */
+    int block_h;                /* a card's height */
+    int icon_h;                 /* an icon tile's: the frame and the labels below */
     int tile_w;
     int row_h;                  /* a List row */
 } Metrics;
@@ -126,9 +128,10 @@ static void metrics(const UiEnv *env, const Window *w, Metrics *m)
     if (list != NULL && w->state.view != VIEW_LIST)
         preview_cell(env, list, w->state.zoom_pt, &m->glyph_w, &m->glyph_h);
     m->block_h = m->glyph_h + 2 * PAD + 2 * (m->ch + 2);
+    m->icon_h = m->glyph_h + 2 * PAD + ICON_GAP + 2 * (m->ch + 2);
     m->tile_w = (small_labels ? 16 : 12) * m->cw + 2 * PAD;
     if (m->tile_w < 2 * m->glyph_w + 4 * PAD)
-        m->tile_w = 2 * m->glyph_w + 4 * PAD;
+        m->tile_w = 2 * m->glyph_w + 4 * PAD;   /* the icon frame, with room around it */
     m->row_h = m->ch + 2;
 }
 
@@ -140,7 +143,7 @@ static int family_count(const UiEnv *env)
 static void icons_grid(const UiEnv *env, const Window *w, const Metrics *m, int content_w, Grid *g)
 {
     (void)w;
-    grid_make(g, content_w, m->tile_w, m->block_h, GAP, family_count(env));
+    grid_make(g, content_w, m->tile_w, m->icon_h, GAP, family_count(env));
 }
 
 /* rows in the List: the header, then the families and the styles shown */
@@ -184,16 +187,6 @@ static void label(short vh, int x, int y, const char *text, int chars)
     draw_text(vh, x, y, buf);
 }
 
-static void centered(const UiEnv *env, const Metrics *m, const Rect *r, int y, const char *text)
-{
-    int chars = (r->w - 2 * PAD) / m->cw;
-    int n = (int)strlen(text);
-
-    if (n > chars)
-        n = chars;
-    label(env->vh, r->x + (r->w - n * m->cw) / 2, y, text, n);
-}
-
 /* the family in its default style at the zoom size, inside r (clipped to it
  * and to clip); text is drawn from x, y */
 static void sample_text(const UiEnv *env, const Window *w, const FontFamily *f, const Rect *r,
@@ -216,25 +209,52 @@ static void sample_text(const UiEnv *env, const Window *w, const FontFamily *f, 
     chrome(env);
 }
 
+/* a line of text centred under an icon; selected, it is white on black like
+ * the Atari Desktop's icon labels */
+static void tile_label(const UiEnv *env, const Metrics *m, const Rect *r, int y, const char *text, int selected)
+{
+    int chars = r->w / m->cw;
+    int n = (int)strlen(text);
+    Rect bar;
+
+    if (n > chars)
+        n = chars;
+    bar.x = r->x + (r->w - n * m->cw) / 2 - 1;
+    bar.y = y;
+    bar.w = n * m->cw + 2;
+    bar.h = m->ch + 2;
+    if (selected)
+        draw_box(env->vh, &bar, 1, 1);
+    vst_color(env->vh, selected ? 0 : 1);
+    label(env->vh, bar.x + 1, y + 1, text, n);
+    vst_color(env->vh, 1);
+}
+
+/* like the Atari Desktop's icon view: the icon on a white rectangle (black
+ * when selected), with its labels below */
 static void draw_tile(const UiEnv *env, const Window *w, const Metrics *m, const FontFamily *f,
                       const Rect *r, const Rect *clip, int selected)
 {
     short ext[8];
     char count[24];
     int width, dw, dh;
-    int color = selected ? 0 : 1;
+    Rect icon;
+    int ly;
 
-    draw_box(env->vh, r, selected ? 1 : 0, 1);
+    icon.w = 2 * m->glyph_w + 2 * PAD;
+    icon.h = m->glyph_h + 2 * PAD;
+    icon.x = r->x + (r->w - icon.w) / 2;
+    icon.y = r->y;
+    draw_box(env->vh, &icon, selected ? 1 : 0, 0);
     use_font(env, f, family_default_style(f), w->state.zoom_pt, &dw, &dh);
     vqt_extent(env->vh, "Aa", ext);
     width = ext[2] - ext[0];
     chrome(env);
-    sample_text(env, w, f, r, clip, r->x + (r->w - width) / 2, r->y + PAD, "Aa", color);
-    vst_color(env->vh, (short)color);
-    centered(env, m, r, r->y + r->h - 2 * (m->ch + 2) - 2, family_display_name(f, env->sys_font));
+    sample_text(env, w, f, &icon, clip, icon.x + (icon.w - width) / 2, icon.y + PAD, "Aa", selected ? 0 : 1);
+    ly = icon.y + icon.h + ICON_GAP;
+    tile_label(env, m, r, ly, family_display_name(f, env->sys_font), selected);
     style_count_text(f->style_count, count, sizeof count);
-    centered(env, m, r, r->y + r->h - (m->ch + 2) - 2, count);
-    vst_color(env->vh, 1);
+    tile_label(env, m, r, ly + m->ch + 2, count, selected);
 }
 
 static void draw_card(const UiEnv *env, const Window *w, const Metrics *m, const FontFamily *f,

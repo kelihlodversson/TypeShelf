@@ -29,7 +29,8 @@ typedef struct {
 
 #define TB_THUMB_W  8
 
-/* Lay the toolbar out for a work area work_w wide.  char_w is the width of
+/* Lay the toolbar out for a work area work_w wide; the zoom slider is at
+ * most 160 pixels wide and right aligned.  char_w is the width of
  * the system font's cell; the style pulldown is 12 cells wide. */
 void toolbar_layout(ToolbarLayout *tl, int work_w, int char_w, WinMode mode);
 
