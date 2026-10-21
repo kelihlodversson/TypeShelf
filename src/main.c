@@ -45,7 +45,7 @@ int main(void)
             strcpy(os_text, "unknown OS");
         snprintf(alert, sizeof alert, "[1][Type Shelf|%d families, %d faces|%s|%s][OK]",
                  list.family_count, faces, gdos_vgdos_name(vq_vgdos()), os_text);
-        app_run(gs.handle, &list, alert, gs.have_arbpt);
+        app_run(gs.handle, &list, alert, gs.have_arbpt, gs.have_ucs2);
         fontlist_free(&list);
     }
 

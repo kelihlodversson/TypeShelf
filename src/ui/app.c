@@ -5,6 +5,7 @@
 #include "ui/command.h"
 #include "ui/icons.h"
 #include "ui/menu.h"
+#include "ui/popup.h"
 #include "ui/views.h"
 #include "layout/layout.h"
 #include "ui/window.h"
@@ -213,6 +214,34 @@ static void on_message(App *app, const short msg[8])
     }
 }
 
+static const char *style_name(const void *ctx, int index)
+{
+    return ((const FontFamily *)ctx)->styles[index].style;
+}
+
+/* the style pulldown: pick which style the Specimen shows */
+static void choose_style(App *app, Window *w)
+{
+    const FontList *list = app->env.fonts;
+    const FontFamily *f;
+    Rect anchor = w->tb.rect[TB_STYLE];
+    Rect work = window_work(w);
+    int style;
+
+    if (!winstate_style_enabled(&w->state) || list == NULL || w->state.family < 0 ||
+        w->state.family >= list->family_count)
+        return;
+    f = &list->families[w->state.family];
+    anchor.x += work.x;
+    anchor.y += work.y;
+    style = popup_choose(&app->env, &anchor, style_name, f, f->style_count, w->state.style);
+    if (style >= 0 && style != w->state.style) {
+        w->state.style = style;
+        w->state.scroll_y = 0;
+        redraw_all(app, w);
+    }
+}
+
 static void on_click(App *app, int x, int y, int clicks)
 {
     Window *w = find_window(app, wind_find(x, y));
@@ -239,11 +268,12 @@ static void on_click(App *app, int x, int y, int clicks)
     case TB_VIEW2:      execute(app, CMD_VIEW_2); break;
     case TB_VIEW3:      execute(app, CMD_VIEW_3); break;
     case TB_SLIDER:     window_drag_zoom(&app->env, w, x); break;
-    default:            break;      /* the style pulldown comes with the single-font view */
+    case TB_STYLE:      choose_style(app, w); break;
+    default:            break;
     }
 }
 
-int app_run(short vh, const FontList *fonts, const char *about, int have_arbpt)
+int app_run(short vh, const FontList *fonts, const char *about, int have_arbpt, int have_ucs2)
 {
     App app;
     short cw, ch, box_w, box_h;
@@ -257,6 +287,7 @@ int app_run(short vh, const FontList *fonts, const char *about, int have_arbpt)
     app.env.vh = vh;
     app.env.fonts = fonts;
     app.env.have_arbpt = have_arbpt;
+    app.env.have_ucs2 = have_ucs2;
     graf_handle(&cw, &ch, &box_w, &box_h);        /* the system font's cell, and its box */
     app.env.cell_w = cw;
     app.env.cell_h = ch;

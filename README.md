@@ -10,10 +10,11 @@ built with [gemlib](https://github.com/kelihlodversson/gemlib) and
 and x86 is compile-checked, until gemlib and pTOS can run a GEM application
 there.
 
-![Type Shelf's window on EmuTOS: the menu bar, the toolbar with the three view buttons and the zoom slider, and a tile for the one font family that is installed](docs/images/screenshot-emutos-low.png)
+![The Icons view: a tile for each installed family, the system font and four TrueType fonts](docs/images/screenshot-icons.png)
 
-*Today's build under Hatari on pTOS (m68k, ST low, 320x200): the Icons view
-with the one font family a machine without a GDOS has, the system font.*
+![The Specimen view of Arial: a preview at the zoom size, then the font's Unicode characters](docs/images/screenshot-specimen.png)
+
+Both on pTOS (the scalable-fonts branch) under QEMU `virt-arm`, in 32-bit colour.
 
 Run `TYPESHLF.PRG` with `TYPESHLF.RSC` (the toolbar's icons) in the same folder.
 
@@ -22,8 +23,10 @@ over gemlib and CI are in place, and so are the menu bar, windows that follow
 the AES (redraw, move, resize, full, close), the toolbar with its zoom slider,
 and the three overview views: Icons (a tile per family), Samples (a pangram in
 each family) and List (a tree of families that expand to their styles).  Click
-or use the arrow keys to select, double-click or Return to open a family (the
-single-font views come next), and scroll with the window's slider.  Install
+or use the arrow keys to select, double-click or Return to open a family: its
+Specimen shows a preview at the zoom size and the font's characters, with a
+style pulldown (or Left and Right) to pick the style, and its Samples show a
+card per style.  Back or Esc returns, and the window's slider scrolls.  Install
 Font and the full About dialog are still to come.  The design is in
 [docs/superpowers/specs/2026-10-20-typeshelf-design.md](docs/superpowers/specs/2026-10-20-typeshelf-design.md).
 

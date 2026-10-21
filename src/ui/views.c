@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <gem.h>
 #include "layout/layout.h"
@@ -19,6 +20,7 @@ typedef struct {
     int icon_h;                 /* an icon tile's: the frame and the labels below */
     int tile_w;
     int row_h;                  /* a List row */
+    int card_h;                 /* a style's card in a family's Samples */
 } Metrics;
 
 /* the labels' font: the system font, black; the Icons view's tiles use its
@@ -123,6 +125,20 @@ static void preview_cell(const UiEnv *env, const FontList *list, int pt, int *gw
     cell_cache.valid = 1;
 }
 
+/* the largest cell over one family's styles */
+static void family_cell(const UiEnv *env, const FontFamily *f, int pt, int *gw, int *gh)
+{
+    int i, cw, chh;
+
+    for (i = 0; i < f->style_count; i++) {
+        use_font(env, f, i, pt, &cw, &chh);
+        if (cw > *gw || i == 0)
+            *gw = cw;
+        if (chh > *gh || i == 0)
+            *gh = chh;
+    }
+}
+
 static void metrics(const UiEnv *env, const Window *w, Metrics *m)
 {
     const FontList *list = env->fonts;
@@ -132,14 +148,20 @@ static void metrics(const UiEnv *env, const Window *w, Metrics *m)
     m->glyph_w = m->cw;
     m->glyph_h = m->ch;
     /* the List only uses the system font */
-    if (list != NULL && w->state.view != VIEW_LIST)
+    if (list != NULL && w->state.mode == MODE_SINGLE) {
+        if (w->state.family >= 0 && w->state.family < list->family_count)
+            family_cell(env, &list->families[w->state.family], w->state.zoom_pt, &m->glyph_w, &m->glyph_h);
+        chrome(env);
+    } else if (list != NULL && w->state.view != VIEW_LIST) {
         preview_cell(env, list, w->state.zoom_pt, &m->glyph_w, &m->glyph_h);
+    }
     m->block_h = m->glyph_h + 2 * PAD + 2 * (m->ch + 2);
     m->icon_h = m->glyph_h + 2 * PAD + ICON_GAP + 2 * (m->ch + 2);
     m->tile_w = (small_labels ? 16 : 12) * m->cw + 2 * PAD;
     if (m->tile_w < 2 * m->glyph_w + 4 * PAD)
         m->tile_w = 2 * m->glyph_w + 4 * PAD;   /* the icon frame, with room around it */
     m->row_h = m->ch + 2;
+    m->card_h = m->glyph_h + 2 * PAD + m->ch + 2;
 }
 
 static int family_count(const UiEnv *env)
@@ -159,28 +181,6 @@ static int list_rows(const UiEnv *env, Window *w)
     return 1 + list_row_count(env->fonts, window_expanded(w, family_count(env)));
 }
 
-int view_content_height(const UiEnv *env, Window *w)
-{
-    Metrics m;
-    Rect c = window_content_rect(w);
-    Grid g;
-
-    if (w->state.mode != MODE_OVERVIEW)
-        return 0;
-    metrics(env, w, &m);
-    switch (w->state.view) {
-    case VIEW_ICONS:
-        icons_grid(env, w, &m, c.w, &g);
-        return grid_height(&g);
-    case VIEW_SAMPLES:
-        return vlist_height(m.block_h, GAP, family_count(env));
-    case VIEW_LIST:
-        return vlist_height(m.row_h, 0, list_rows(env, w));
-    default:
-        return 0;
-    }
-}
-
 /* ---- drawing ---- */
 
 /* the text, cut to chars characters */
@@ -196,7 +196,7 @@ static void label(short vh, int x, int y, const char *text, int chars)
 
 /* the family in its default style at the zoom size, inside r (clipped to it
  * and to clip); the text's baseline is at y, so that families line up */
-static void sample_text(const UiEnv *env, const Window *w, const FontFamily *f, const Rect *r,
+static void sample_text(const UiEnv *env, const Window *w, const FontFamily *f, int style, const Rect *r,
                         const Rect *clip, int x, int y, const char *text, int color)
 {
     Rect inner, vis;
@@ -209,7 +209,7 @@ static void sample_text(const UiEnv *env, const Window *w, const FontFamily *f, 
     if (!rect_intersect(&inner, clip, &vis))
         return;
     draw_clip(env->vh, &vis);
-    use_font(env, f, family_default_style(f), w->state.zoom_pt, &cw, &chh);
+    use_font(env, f, style, w->state.zoom_pt, &cw, &chh);
     vst_color(env->vh, (short)color);
     {
         /* the text is aligned to the top, so move it up by the font's top
@@ -264,7 +264,7 @@ static void draw_tile(const UiEnv *env, const Window *w, const Metrics *m, const
     vqt_extent(env->vh, "Aa", ext);
     width = ext[2] - ext[0];
     chrome(env);
-    sample_text(env, w, f, &icon, clip, icon.x + (icon.w - width) / 2, base_y(m, icon.y + PAD), "Aa", selected ? 0 : 1);
+    sample_text(env, w, f, family_default_style(f), &icon, clip, icon.x + (icon.w - width) / 2, base_y(m, icon.y + PAD), "Aa", selected ? 0 : 1);
     ly = icon.y + icon.h + ICON_GAP;
     tile_label(env, m, r, ly, family_display_name(f, env->sys_font), selected);
     style_count_text(f->style_count, count, sizeof count);
@@ -285,7 +285,7 @@ static void draw_card(const UiEnv *env, const Window *w, const Metrics *m, const
     n = (int)strlen(count);
     label(env->vh, r->x + PAD, r->y + PAD, family_display_name(f, env->sys_font), (r->w - 3 * PAD - n * m->cw) / m->cw);
     label(env->vh, r->x + r->w - PAD - n * m->cw, r->y + PAD, count, n);
-    sample_text(env, w, f, r, clip, r->x + PAD, base_y(m, r->y + PAD + m->ch + 2), sample_pangram, color);
+    sample_text(env, w, f, family_default_style(f), r, clip, r->x + PAD, base_y(m, r->y + PAD + m->ch + 2), sample_pangram, color);
     vst_color(env->vh, (short)color);
     label(env->vh, r->x + PAD, r->y + r->h - PAD - m->ch, f->styles[family_default_style(f)].style,
           (r->w - 2 * PAD) / m->cw);
@@ -295,6 +295,309 @@ static void draw_card(const UiEnv *env, const Window *w, const Metrics *m, const
 static unsigned short formats_of(const FontFamily *f)
 {
     return f->formats;
+}
+
+/* ---- single font: Specimen and the family's Samples ---- */
+
+#define REP_PT      16      /* the repertoire's size, whatever the zoom */
+
+/* The characters the Specimen shows: those of the style's first..last range
+ * (vqt_fontinfo) the VDI can draw.  With a Unicode VDI the range is the
+ * Unicode one and vqt_width answers -1 for a code the style lacks.  Kept for
+ * the last few fonts asked about, as asking costs a call a character. */
+#define REP_SLOTS 4         /* fonts remembered; the oldest makes room */
+
+static struct {
+    const FontList *list;
+    int family, style, have_ucs2;
+    int count;
+    short *codes;
+    int valid;
+} rep_cache[REP_SLOTS];
+static int rep_next_slot;
+
+static void repertoire_of(const UiEnv *env, const Window *w, const FontFamily *f, int style, const short **codes,
+                          int *count)
+{
+    int dw, dh, c, first, last, pass, slot;
+    short min, max, dist[5], width, eff[3];
+
+    for (slot = 0; slot < REP_SLOTS; slot++) {
+        if (rep_cache[slot].valid && rep_cache[slot].list == env->fonts &&
+            rep_cache[slot].family == w->state.family && rep_cache[slot].style == style &&
+            rep_cache[slot].have_ucs2 == env->have_ucs2)
+            break;
+    }
+    if (slot == REP_SLOTS) {
+        slot = rep_next_slot;
+        rep_next_slot = (rep_next_slot + 1) % REP_SLOTS;
+        free(rep_cache[slot].codes);
+        rep_cache[slot].codes = NULL;
+        rep_cache[slot].count = 0;
+        if (env->have_ucs2)
+            vst_map_mode(env->vh, MAP_UNICODE);
+        use_font(env, f, style, REP_PT, &dw, &dh);
+        vqt_fontinfo(env->vh, &min, &max, dist, &width, eff);
+        first = (unsigned short)min;
+        last = (unsigned short)max;
+        if (env->have_ucs2 && last < 256 && first < 256) {
+            /* the VDI reported the 8-bit range under the Unicode map: search the whole plane instead */
+            last = 0xFFFF;
+        }
+        /* count first, so a whole-plane search keeps only what the font has */
+        for (pass = 0; pass < 2; pass++) {
+            if (pass == 1) {
+                if (rep_cache[slot].count == 0)
+                    break;
+                rep_cache[slot].codes = malloc((size_t)rep_cache[slot].count * sizeof(short));
+                if (rep_cache[slot].codes == NULL) {
+                    rep_cache[slot].count = 0;
+                    break;
+                }
+                rep_cache[slot].count = 0;
+            }
+            for (c = repertoire_next(first, last, -1, env->have_ucs2); c >= 0;
+                 c = repertoire_next(first, last, c, env->have_ucs2)) {
+                short cw, l, r;
+
+                if (env->have_ucs2 && vqt_width(env->vh, (short)c, &cw, &l, &r) == -1)
+                    continue;
+                if (pass == 1)
+                    rep_cache[slot].codes[rep_cache[slot].count] = (short)c;
+                rep_cache[slot].count++;
+            }
+        }
+        if (env->have_ucs2)
+            vst_map_mode(env->vh, MAP_ATARI);
+        chrome(env);
+        rep_cache[slot].list = env->fonts;
+        rep_cache[slot].family = w->state.family;
+        rep_cache[slot].style = style;
+        rep_cache[slot].have_ucs2 = env->have_ucs2;
+        rep_cache[slot].valid = 1;
+    }
+    *codes = rep_cache[slot].codes;
+    *count = rep_cache[slot].count;
+}
+
+typedef struct {
+    int preview_y;          /* the first preview line */
+    int line_h;
+    int rows;               /* preview rows after wrapping */
+    int rep_label_y;
+    int rep_y;              /* the repertoire grid */
+    Grid rep;
+    int rep_cw, rep_ch;     /* a glyph cell at REP_PT */
+    int total;
+    const short *codes;     /* the repertoire */
+    int count;
+} Specimen;
+
+static const FontFamily *single_family(const UiEnv *env, const Window *w)
+{
+    const FontList *list = env->fonts;
+
+    if (list == NULL || w->state.family < 0 || w->state.family >= list->family_count)
+        return NULL;
+    return &list->families[w->state.family];
+}
+
+static int single_style(const FontFamily *f, const Window *w)
+{
+    return w->state.style >= 0 && w->state.style < f->style_count ? w->state.style : 0;
+}
+
+/* how many leading characters of text fit in maxw pixels, in the font
+ * selected now; at least one */
+static int fit_chars(short vh, const char *text, int maxw)
+{
+    char buf[64];
+    short ext[8];
+    int k;
+
+    for (k = (int)strlen(text); k > 1; k--) {
+        snprintf(buf, sizeof buf, "%.*s", k, text);
+        vqt_extent(vh, buf, ext);
+        if (ext[2] - ext[0] <= maxw)
+            return k;
+    }
+    return 1;
+}
+
+/* the rows the preview wraps to at the zoom size; with draw, draws them from x, y */
+static int preview_rows(const UiEnv *env, const Window *w, const FontFamily *f, int maxw, int x, int y, int line_h,
+                        int draw)
+{
+    int rows = 0, i;
+    int dw, dh;
+
+    use_font(env, f, single_style(f, w), w->state.zoom_pt, &dw, &dh);
+    for (i = 0; i < PREVIEW_LINES; i++) {
+        const char *rest = specimen_preview[i];
+
+        while (*rest != '\0') {
+            int k = fit_chars(env->vh, rest, maxw);
+
+            if (draw)
+                label(env->vh, x, y + rows * line_h, rest, k);
+            rest += k;
+            rows++;
+        }
+    }
+    chrome(env);
+    return rows;
+}
+
+static void specimen_layout(const UiEnv *env, const Window *w, const Metrics *m, int content_w, Specimen *sp)
+{
+    const FontFamily *f = single_family(env, w);
+    int y = GAP;
+
+    memset(sp, 0, sizeof *sp);
+    if (f == NULL)
+        return;
+    y += m->ch + 2 + PAD;                       /* the "Preview" label */
+    sp->preview_y = y;
+    sp->line_h = m->glyph_h + 4;
+    sp->rows = preview_rows(env, w, f, content_w - 2 * GAP, 0, 0, sp->line_h, 0);
+    y += sp->rows * sp->line_h + GAP;
+    sp->rep_label_y = y;
+    y += m->ch + 2 + PAD;
+    use_font(env, f, single_style(f, w), REP_PT, &sp->rep_cw, &sp->rep_ch);
+    chrome(env);
+    sp->rep_y = y;
+    repertoire_of(env, w, f, single_style(f, w), &sp->codes, &sp->count);
+    grid_make(&sp->rep, content_w, sp->rep_cw + 8, sp->rep_ch + 6, 2, sp->count);
+    sp->total = y + grid_height(&sp->rep) + GAP;
+}
+
+static void draw_specimen(const UiEnv *env, const Window *w, const Metrics *m, const Rect *content, const Rect *clip)
+{
+    const FontFamily *f = single_family(env, w);
+    Specimen sp;
+    int oy = content->y - w->state.scroll_y;
+    int dw, dh, i, first_i, end_i;
+    Rect r, vis;
+
+    if (f == NULL)
+        return;
+    specimen_layout(env, w, m, content->w, &sp);
+    /* keep far-off coordinates away from the VDI: they would wrap as shorts */
+    if (oy + GAP + m->ch > clip->y && oy + GAP < clip->y + clip->h)
+        draw_text(env->vh, content->x + GAP, oy + GAP, "Preview");
+    if (oy + sp.preview_y + sp.rows * sp.line_h > clip->y && oy + sp.preview_y < clip->y + clip->h)
+        preview_rows(env, w, f, content->w - 2 * GAP, content->x + GAP, oy + sp.preview_y, sp.line_h, 1);
+    if (oy + sp.rep_label_y + m->ch > clip->y && oy + sp.rep_label_y < clip->y + clip->h)
+        draw_text(env->vh, content->x + GAP, oy + sp.rep_label_y,
+                  env->have_ucs2 ? "Repertoire (Unicode)" : "Repertoire");
+    use_font(env, f, single_style(f, w), REP_PT, &dw, &dh);
+    if (env->have_ucs2)
+        vst_map_mode(env->vh, MAP_UNICODE);
+    {
+        /* only the grid rows the clip reaches */
+        RowRange rr = layout_visible_rows(clip->y - (oy + sp.rep_y), clip->h, sp.rep.tile_h + sp.rep.gap, sp.rep.rows);
+
+        first_i = (rr.first > 0 ? rr.first - 1 : 0) * sp.rep.cols;
+        end_i = (rr.end + 1) * sp.rep.cols;
+        if (end_i > sp.count)
+            end_i = sp.count;
+    }
+    for (i = first_i; i < end_i; i++) {
+        Rect t = grid_tile(&sp.rep, i);
+        char ch[2];
+        short ext[8];
+
+        r.x = content->x + t.x;
+        r.y = oy + sp.rep_y + t.y;
+        r.w = t.w;
+        r.h = t.h;
+        if (!rect_intersect(&r, clip, &vis))
+            continue;
+        draw_box(env->vh, &r, 0, 1);
+        if (env->have_ucs2) {
+            draw_char16(env->vh, r.x + (r.w - char16_width(env->vh, sp.codes[i])) / 2, r.y + (r.h - sp.rep_ch) / 2,
+                        sp.codes[i]);
+            continue;
+        }
+        ch[0] = (char)sp.codes[i];
+        ch[1] = '\0';
+        vqt_extent(env->vh, ch, ext);
+        draw_text(env->vh, r.x + (r.w - (ext[2] - ext[0])) / 2, r.y + (r.h - sp.rep_ch) / 2, ch);
+    }
+    if (env->have_ucs2)
+        vst_map_mode(env->vh, MAP_ATARI);
+    chrome(env);
+}
+
+/* a style's card: its label and format, then the pangram in that style */
+static void draw_style_card(const UiEnv *env, const Window *w, const Metrics *m, const FontFamily *f, int style,
+                            const Rect *r, const Rect *clip)
+{
+    char text[32];
+    int n;
+
+    draw_box(env->vh, r, 0, 1);
+    chrome(env);
+    font_format_text(f->styles[style].format, text, sizeof text);
+    n = (int)strlen(text);
+    label(env->vh, r->x + PAD, r->y + PAD, f->styles[style].style, (r->w - 3 * PAD - n * m->cw) / m->cw);
+    label(env->vh, r->x + r->w - PAD - n * m->cw, r->y + PAD, text, n);
+    sample_text(env, w, f, style, r, clip, r->x + PAD, base_y(m, r->y + PAD + m->ch + 2), sample_pangram, 1);
+}
+
+static void draw_single(const UiEnv *env, const Window *w, const Metrics *m, const Rect *content, const Rect *clip)
+{
+    const FontFamily *f = single_family(env, w);
+    int oy = content->y - w->state.scroll_y;
+    int i;
+    Rect r, vis;
+
+    if (f == NULL)
+        return;
+    if (w->state.view == VIEW_SPECIMEN) {
+        draw_specimen(env, w, m, content, clip);
+        return;
+    }
+    for (i = 0; i < f->style_count; i++) {
+        r.x = content->x + GAP;
+        r.y = oy + vlist_top(m->card_h, GAP, i);
+        r.w = content->w - 2 * GAP;
+        r.h = m->card_h;
+        if (rect_intersect(&r, clip, &vis))
+            draw_style_card(env, w, m, f, i, &r, clip);
+    }
+}
+
+int view_content_height(const UiEnv *env, Window *w)
+{
+    Metrics m;
+    Rect c = window_content_rect(w);
+    Grid g;
+
+    metrics(env, w, &m);
+    if (w->state.mode == MODE_SINGLE) {
+        const FontFamily *f = single_family(env, w);
+        Specimen sp;
+
+        if (f == NULL)
+            return 0;
+        if (w->state.view == VIEW_SPECIMEN) {
+            specimen_layout(env, w, &m, c.w, &sp);
+            return sp.total;
+        }
+        return vlist_height(m.card_h, GAP, f->style_count);
+    }
+    switch (w->state.view) {
+    case VIEW_ICONS:
+        icons_grid(env, w, &m, c.w, &g);
+        return grid_height(&g);
+    case VIEW_SAMPLES:
+        return vlist_height(m.block_h, GAP, family_count(env));
+    case VIEW_LIST:
+        return vlist_height(m.row_h, 0, list_rows(env, w));
+    default:
+        return 0;
+    }
 }
 
 static void draw_list_row(const UiEnv *env, const Metrics *m, const FontList *list, const unsigned char *expanded,
@@ -372,6 +675,11 @@ void view_draw(const UiEnv *env, Window *w, const Rect *content, const Rect *cli
     metrics(env, w, &m);
     chrome(env);
 
+    if (w->state.mode == MODE_SINGLE) {
+        draw_single(env, w, &m, content, clip);
+        vswr_mode(env->vh, MD_REPLACE);
+        return;
+    }
     switch (w->state.view) {
     case VIEW_ICONS:
         icons_grid(env, w, &m, content->w, &g);
@@ -532,6 +840,24 @@ int view_navigate(const UiEnv *env, Window *w, Command cmd)
     int sel = w->state.selected;
     int next = sel;
 
+    if (w->state.mode == MODE_SINGLE) {
+        const FontFamily *f = single_family(env, w);
+
+        /* Left and Right pick the style in Specimen, Up and Down scroll */
+        if ((cmd == CMD_LEFT || cmd == CMD_RIGHT) && f != NULL && winstate_style_enabled(&w->state)) {
+            int style = style_step(w->state.style, cmd == CMD_LEFT ? -1 : 1, f->style_count);
+
+            if (style == w->state.style)
+                return 0;
+            w->state.style = style;
+            return 1;
+        }
+        if (cmd == CMD_UP || cmd == CMD_DOWN) {
+            w->state.scroll_y += (cmd == CMD_UP ? -2 : 2) * env->cell_h;
+            return 1;
+        }
+        return 0;
+    }
     if (w->state.mode != MODE_OVERVIEW || count == 0)
         return 0;
     metrics(env, w, &m);

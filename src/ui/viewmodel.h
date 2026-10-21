@@ -91,4 +91,33 @@ void window_title_text(const FontList *list, const WinState *ws, int sys_font, c
 /* the line the Samples view shows at the zoom size */
 extern const char sample_pangram[];
 
+/* the Specimen's preview: three lines, each wrapped to the window's width */
+#define PREVIEW_LINES 3
+extern const char *const specimen_preview[PREVIEW_LINES];
+
+/* ---- Specimen: the repertoire ---- */
+
+/* The next character of a font's repertoire after `after` (-1 to start),
+ * within the font's first..last range, or -1 at the end.  Skips NUL (not
+ * drawable as a string) and the blank space; with unicode also the control
+ * and surrogate codes and anything above 0xFFFF. */
+int repertoire_next(int first, int last, int after, int unicode);
+
+/* ---- the style pulldown's popup ---- */
+
+/* The popup's rectangle: below anchor (above it when there is more room
+ * there), at least min_w wide, one row_h per item, always inside screen;
+ * when not all the items fit, the rows that do (at least one). */
+Rect popup_rect(const Rect *anchor, int min_w, int row_h, int count, const Rect *screen);
+
+/* the first item to show when only `rows` of `count` fit, so that
+ * `current` is visible */
+int popup_top(int count, int rows, int current);
+
+/* the row at a screen point, or -1 outside the popup */
+int popup_row(const Rect *popup, int row_h, int x, int y);
+
+/* the style after moving by delta in a family of count styles, staying inside */
+int style_step(int current, int delta, int count);
+
 #endif

@@ -42,3 +42,21 @@ void draw_text(short vh, int x, int y, const char *s)
     vst_alignment(vh, 0, 5, &dummy_h, &dummy_v);
     v_gtext(vh, (short)x, (short)y, (char *)s);
 }
+
+void draw_char16(short vh, int x, int y, int code)
+{
+    short dummy_h, dummy_v;
+    short wc = (short)code;
+
+    vst_alignment(vh, 0, 5, &dummy_h, &dummy_v);
+    v_gtext16n(vh, (short)x, (short)y, &wc, 1);
+}
+
+int char16_width(short vh, int code)
+{
+    short ext[8];
+    short wc = (short)code;
+
+    vqt_extent16n(vh, &wc, 1, ext);
+    return ext[2] - ext[0];
+}

@@ -274,6 +274,69 @@ static void test_viewmodel(void)
     char buf[64];
     WinState ws;
 
+    /* the Unicode candidates run through the blocks in order */
+    /* the repertoire walks the font's range, skipping what cannot be shown */
+    CHECK_INT(repertoire_next(0, 255, -1, 0), 1);
+    CHECK_INT(repertoire_next(0, 255, 31, 0), 33);          /* not the space */
+    CHECK_INT(repertoire_next(33, 126, -1, 0), 33);
+    CHECK_INT(repertoire_next(33, 126, 126, 0), -1);
+    CHECK_INT(repertoire_next(8, 8, -1, 0), 8);             /* a font of one check mark */
+    CHECK_INT(repertoire_next(8, 8, 8, 0), -1);
+    CHECK_INT(repertoire_next(0x7E, 0xA0, 0x7E, 1), 0xA0);
+    CHECK_INT(repertoire_next(0x7E, 0xA1, 0x7E, 1), 0xA0);  /* no C1 controls in Unicode */
+    CHECK_INT(repertoire_next(0xD7FF, 0xE000, 0xD7FF, 1), 0xE000);
+    CHECK_INT(repertoire_next(0xFFFE, 0x10010, 0xFFFE, 1), 0xFFFF);
+    CHECK_INT(repertoire_next(0xFFFE, 0x10010, 0xFFFF, 1), -1);
+    CHECK_INT(repertoire_next(10, 5, -1, 0), -1);
+    CHECK_INT(repertoire_next(0, 255, -1, 1), 0x21);        /* Unicode has no C0 controls; the Atari set keeps its symbols */
+
+    /* the popup sits under its anchor and stays on the screen */
+    {
+        Rect anchor = { 10, 20, 60, 16 };
+        Rect screen = { 0, 0, 320, 200 };
+        Rect pop = popup_rect(&anchor, 40, 10, 3, &screen);
+
+        CHECK_INT(pop.x, 10);
+        CHECK_INT(pop.y, 36);
+        CHECK_INT(pop.w, 60);
+        CHECK_INT(pop.h, 32);
+        CHECK_INT(popup_row(&pop, 10, 12, 37), 0);
+        CHECK_INT(popup_row(&pop, 10, 12, 47), 1);
+        CHECK_INT(popup_row(&pop, 10, 12, 57), 2);
+        CHECK_INT(popup_row(&pop, 10, 12, 36), -1);     /* the border */
+        CHECK_INT(popup_row(&pop, 10, 5, 40), -1);
+        CHECK_INT(popup_row(&pop, 10, 12, 80), -1);
+        pop = popup_rect(&anchor, 100, 10, 3, &screen);
+        CHECK_INT(pop.w, 100);
+        anchor.x = 300;
+        pop = popup_rect(&anchor, 100, 10, 3, &screen);
+        CHECK_INT(pop.x, 220);                          /* pushed back inside */
+        anchor.x = 10;
+        anchor.y = 170;
+        pop = popup_rect(&anchor, 40, 10, 30, &screen);
+        CHECK_INT(pop.h, 2 + 10 * ((170 - 2) / 10));   /* more room above: it opens upwards */
+        CHECK_INT(pop.y + pop.h, 170);
+        anchor.y = 20;
+        pop = popup_rect(&anchor, 40, 10, 30, &screen);
+        CHECK_INT(pop.h, 2 + 10 * ((200 - 36 - 2) / 10));   /* only the rows that fit */
+        anchor.y = 180;
+        pop = popup_rect(&anchor, 40, 10, 1, &screen);
+        CHECK(pop.y >= 0 && pop.y + pop.h <= 200);          /* inside the desktop */
+        anchor.y = 195;
+        pop = popup_rect(&anchor, 40, 10, 5, &screen);
+        CHECK(pop.y >= 0 && pop.y + pop.h <= 200);
+        CHECK(pop.h >= 12);                             /* at least one */
+        CHECK_INT(popup_top(5, 8, 2), 0);               /* all fit */
+        CHECK_INT(popup_top(30, 8, 0), 0);
+        CHECK_INT(popup_top(30, 8, 15), 11);            /* the current one stays visible */
+        CHECK_INT(popup_top(30, 8, 29), 22);
+    }
+
+    CHECK_INT(style_step(0, -1, 3), 0);
+    CHECK_INT(style_step(1, 1, 3), 2);
+    CHECK_INT(style_step(2, 1, 3), 2);
+    CHECK_INT(style_step(0, 1, 0), 0);
+
     /* the title says what the window shows */
     winstate_init(&ws);
     window_title_text(&list, &ws, -1, buf, sizeof buf);

@@ -241,3 +241,92 @@ void window_title_text(const FontList *list, const WinState *ws, int sys_font, c
     style_count_text(f->style_count, count, sizeof count);
     snprintf(out, cap, "TypeShelf: %s, %s", family_display_name(f, sys_font), count);
 }
+
+const char *const specimen_preview[PREVIEW_LINES] = {
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    "abcdefghijklmnopqrstuvwxyz",
+    "0123456789"
+};
+
+int repertoire_next(int first, int last, int after, int unicode)
+{
+    int c = after < first - 1 ? first - 1 : after;
+
+    if (unicode && last > 0xFFFF)
+        last = 0xFFFF;
+    while (++c <= last) {
+        if (c < 1 || c == 32)                       /* NUL cannot be drawn as a string; the space is blank */
+            continue;
+        if (unicode && (c < 0x20 || (c >= 0x7F && c <= 0x9F) || (c >= 0xD800 && c <= 0xDFFF)))
+            continue;                               /* controls and surrogates */
+        return c;
+    }
+    return -1;
+}
+
+int style_step(int current, int delta, int count)
+{
+    int next = current + delta;
+
+    if (count <= 0)
+        return 0;
+    if (next < 0)
+        next = 0;
+    if (next > count - 1)
+        next = count - 1;
+    return next;
+}
+
+Rect popup_rect(const Rect *anchor, int min_w, int row_h, int count, const Rect *screen)
+{
+    Rect r;
+    int rows, below, above, bottom = screen->y + screen->h;
+
+    r.w = anchor->w > min_w ? anchor->w : min_w;
+    if (r.w > screen->w)
+        r.w = screen->w;
+    r.x = anchor->x;
+    if (r.x + r.w > screen->x + screen->w)
+        r.x = screen->x + screen->w - r.w;
+    if (r.x < screen->x)
+        r.x = screen->x;
+    r.y = anchor->y + anchor->h;
+    below = (bottom - r.y - 2) / row_h;
+    above = (anchor->y - screen->y - 2) / row_h;
+    if (count > below && above > below) {           /* more room over the anchor */
+        rows = count < above ? count : above;
+        r.y = anchor->y - (rows * row_h + 2);
+    } else {
+        rows = count < below ? count : below;
+    }
+    if (rows < 1)
+        rows = 1;
+    r.h = rows * row_h + 2;
+    if (r.y + r.h > bottom)                         /* always inside the screen */
+        r.y = bottom - r.h;
+    if (r.y < screen->y)
+        r.y = screen->y;
+    return r;
+}
+
+int popup_top(int count, int rows, int current)
+{
+    int top;
+
+    if (count <= rows || current < 0)
+        return 0;
+    top = current - rows / 2;
+    if (top > count - rows)
+        top = count - rows;
+    return top < 0 ? 0 : top;
+}
+
+int popup_row(const Rect *popup, int row_h, int x, int y)
+{
+    int row;
+
+    if (!rect_contains(popup, x, y) || y < popup->y + 1)
+        return -1;
+    row = (y - popup->y - 1) / row_h;
+    return row < (popup->h - 2) / row_h ? row : -1;
+}
