@@ -26,7 +26,7 @@ Font and the full About dialog are still to come.  The design is in
 
 ## Screenshots
 
-All on pTOS (the scalable-fonts branch) under QEMU `virt-arm`, in 32-bit colour, with the system font and four TrueType fonts installed.
+All on pTOS (master, with its built-in scalable fonts) under QEMU `virt-arm`, in 32-bit colour, with the system font and four TrueType fonts installed.
 
 **Icons**: a tile for each family, with its name and number of styles.
 
