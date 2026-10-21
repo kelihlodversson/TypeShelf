@@ -39,12 +39,55 @@ static void use_font(const UiEnv *env, const FontFamily *f, int style, int pt, i
     short cw = 0, chh = 0, w = 0, h = 0;
 
     vst_font(env->vh, st->id);
-    if (st->format & ~FONT_FORMAT_BITMAP)
+    if (env->have_arbpt && (st->format & ~FONT_FORMAT_BITMAP))
         vst_arbpt(env->vh, (short)pt, &cw, &chh, &w, &h);
     if (h <= 0)
         vst_point(env->vh, (short)pt, &cw, &chh, &w, &h);
     *cellw = w;
     *cellh = h;
+}
+
+/* the largest preview cell over the families, remembered per font list and
+ * zoom: measuring selects every family's font in the VDI */
+static struct {
+    const FontList *list;
+    int count, pt, have_arbpt;
+    int w, h;
+    int valid;
+} cell_cache;
+
+static void preview_cell(const UiEnv *env, const FontList *list, int pt, int *gw, int *gh)
+{
+    int i, sized = 0;
+
+    if (cell_cache.valid && cell_cache.list == list && cell_cache.count == list->family_count
+        && cell_cache.pt == pt && cell_cache.have_arbpt == env->have_arbpt) {
+        *gw = cell_cache.w;
+        *gh = cell_cache.h;
+        return;
+    }
+    /* every family previews in its own font, so size for the largest cell */
+    for (i = 0; i < list->family_count; i++) {
+        const FontFamily *f = &list->families[i];
+        int cw, chh;
+
+        if (f->style_count <= 0)
+            continue;
+        use_font(env, f, family_default_style(f), pt, &cw, &chh);
+        if (cw > *gw || !sized)
+            *gw = cw;
+        if (chh > *gh || !sized)
+            *gh = chh;
+        sized = 1;
+    }
+    chrome(env);
+    cell_cache.list = list;
+    cell_cache.count = list->family_count;
+    cell_cache.pt = pt;
+    cell_cache.have_arbpt = env->have_arbpt;
+    cell_cache.w = *gw;
+    cell_cache.h = *gh;
+    cell_cache.valid = 1;
 }
 
 static void metrics(const UiEnv *env, const Window *w, Metrics *m)
@@ -55,25 +98,9 @@ static void metrics(const UiEnv *env, const Window *w, Metrics *m)
     m->ch = env->cell_h;
     m->glyph_w = m->cw;
     m->glyph_h = m->ch;
-    if (list != NULL) {
-        int i, sized = 0;
-
-        /* every family previews in its own font, so size for the largest cell */
-        for (i = 0; i < list->family_count; i++) {
-            const FontFamily *f = &list->families[i];
-            int cw, chh;
-
-            if (f->style_count <= 0)
-                continue;
-            use_font(env, f, family_default_style(f), w->state.zoom_pt, &cw, &chh);
-            if (cw > m->glyph_w || !sized)
-                m->glyph_w = cw;
-            if (chh > m->glyph_h || !sized)
-                m->glyph_h = chh;
-            sized = 1;
-        }
-        chrome(env);
-    }
+    /* the List only uses the system font */
+    if (list != NULL && w->state.view != VIEW_LIST)
+        preview_cell(env, list, w->state.zoom_pt, &m->glyph_w, &m->glyph_h);
     m->block_h = m->glyph_h + 2 * PAD + 2 * (m->ch + 2);
     m->tile_w = 12 * m->cw + 2 * PAD;
     if (m->tile_w < 2 * m->glyph_w + 4 * PAD)
@@ -407,7 +434,7 @@ int view_click(const UiEnv *env, Window *w, int x, int y, int clicks)
         break;
     }
     case VIEW_SAMPLES:
-        hit = vlist_hit(m.block_h, GAP, count, cy);
+        hit = (cx >= GAP && cx < c.w - GAP) ? vlist_hit(m.block_h, GAP, count, cy) : -1;
         break;
     case VIEW_LIST: {
         unsigned char *expanded = window_expanded(w, count);

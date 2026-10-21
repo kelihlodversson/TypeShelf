@@ -12,6 +12,6 @@
  * list, about the text of the About alert (a form_alert() string).  Returns
  * 0, or -1 if the menu or the first window could not be created.
  */
-int app_run(short vh, const FontList *fonts, const char *about);
+int app_run(short vh, const FontList *fonts, const char *about, int have_arbpt);
 
 #endif
