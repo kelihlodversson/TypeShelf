@@ -97,23 +97,22 @@ extern const char *const specimen_preview[PREVIEW_LINES];
 
 /* ---- Specimen: the repertoire ---- */
 
-/* the characters of the repertoire grid: 33 to 126 and 128 to 255 (127 is
- * DEL, 0 to 32 are controls and the space) */
-int repertoire_count(void);
-int repertoire_char(int index);        /* the character code, or -1 out of range */
-
-/* Unicode: the characters worth looking for in a font, in blocks (Latin,
- * Greek, Cyrillic, punctuation, currency, arrows, mathematics, boxes, shapes).
- * The Specimen keeps those the font has. */
-int unicode_candidate_count(void);
-int unicode_candidate(int index);       /* the code, or -1 out of range */
+/* The next character of a font's repertoire after `after` (-1 to start),
+ * within the font's first..last range, or -1 at the end.  Skips NUL (not
+ * drawable as a string) and the blank space; with unicode also the control
+ * and surrogate codes and anything above 0xFFFF. */
+int repertoire_next(int first, int last, int after, int unicode);
 
 /* ---- the style pulldown's popup ---- */
 
-/* The popup's rectangle: below anchor, at least min_w wide, one row_h per
- * item, kept inside screen; with too little room below, the rows that fit
- * (at least one) are shown. */
+/* The popup's rectangle: below anchor (above it when there is more room
+ * there), at least min_w wide, one row_h per item, always inside screen;
+ * when not all the items fit, the rows that do (at least one). */
 Rect popup_rect(const Rect *anchor, int min_w, int row_h, int count, const Rect *screen);
+
+/* the first item to show when only `rows` of `count` fit, so that
+ * `current` is visible */
+int popup_top(int count, int rows, int current);
 
 /* the row at a screen point, or -1 outside the popup */
 int popup_row(const Rect *popup, int row_h, int x, int y);

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <gem.h>
 #include "layout/layout.h"
@@ -300,44 +301,55 @@ static unsigned short formats_of(const FontFamily *f)
 
 #define REP_PT      16      /* the repertoire's size, whatever the zoom */
 
-/* The characters the Specimen shows: with a Unicode VDI, those of the
- * candidate blocks the style has (vqt_width answers -1 for the others);
- * otherwise the Atari character set.  Kept for the last font asked about,
- * as asking costs a call a character. */
-#define MAX_REP 3000
-
+/* The characters the Specimen shows: those of the style's first..last range
+ * (vqt_fontinfo) the VDI can draw.  With a Unicode VDI the range is the
+ * Unicode one and vqt_width answers -1 for a code the style lacks.  Kept for
+ * the last font asked about, as asking costs a call a character. */
 static struct {
     const FontList *list;
     int family, style, have_ucs2;
     int count;
-    short codes[MAX_REP];
+    short *codes;
     int valid;
 } rep_cache;
 
 static void repertoire_of(const UiEnv *env, const Window *w, const FontFamily *f, int style, const short **codes,
                           int *count)
 {
-    int i, dw, dh;
+    int dw, dh, c, first, last, cap;
+    short min, max, dist[5], width, eff[3];
 
     if (!(rep_cache.valid && rep_cache.list == env->fonts && rep_cache.family == w->state.family &&
           rep_cache.style == style && rep_cache.have_ucs2 == env->have_ucs2)) {
+        free(rep_cache.codes);
+        rep_cache.codes = NULL;
         rep_cache.count = 0;
-        if (env->have_ucs2) {
+        if (env->have_ucs2)
             vst_map_mode(env->vh, MAP_UNICODE);
-            use_font(env, f, style, REP_PT, &dw, &dh);
-            for (i = 0; i < unicode_candidate_count() && rep_cache.count < MAX_REP; i++) {
-                short cw, l, r;
-                int code = unicode_candidate(i);
-
-                if (vqt_width(env->vh, (short)code, &cw, &l, &r) != -1)
-                    rep_cache.codes[rep_cache.count++] = (short)code;
-            }
-            vst_map_mode(env->vh, MAP_ATARI);
-            chrome(env);
-        } else {
-            for (i = 0; i < repertoire_count(); i++)
-                rep_cache.codes[rep_cache.count++] = (short)repertoire_char(i);
+        use_font(env, f, style, REP_PT, &dw, &dh);
+        vqt_fontinfo(env->vh, &min, &max, dist, &width, eff);
+        first = (unsigned short)min;
+        last = (unsigned short)max;
+        if (env->have_ucs2 && last < 256 && first < 256) {
+            /* the VDI reported the 8-bit range under the Unicode map: search the whole plane instead */
+            last = 0xFFFF;
         }
+        cap = last >= first ? last - first + 1 : 0;
+        if (cap > 0)
+            rep_cache.codes = malloc((size_t)cap * sizeof(short));
+        if (rep_cache.codes != NULL) {
+            for (c = repertoire_next(first, last, -1, env->have_ucs2); c >= 0;
+                 c = repertoire_next(first, last, c, env->have_ucs2)) {
+                short cw, l, r;
+
+                if (env->have_ucs2 && vqt_width(env->vh, (short)c, &cw, &l, &r) == -1)
+                    continue;
+                rep_cache.codes[rep_cache.count++] = (short)c;
+            }
+        }
+        if (env->have_ucs2)
+            vst_map_mode(env->vh, MAP_ATARI);
+        chrome(env);
         rep_cache.list = env->fonts;
         rep_cache.family = w->state.family;
         rep_cache.style = style;

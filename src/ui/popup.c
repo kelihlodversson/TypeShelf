@@ -6,6 +6,10 @@
 
 #define TICK_MS     30
 #define SCAN_ESC    0x01
+#define SCAN_RETURN 0x1c
+#define SCAN_ENTER  0x72
+#define SCAN_UP     0x48
+#define SCAN_DOWN   0x50
 
 static void draw_row(const UiEnv *env, const Rect *pop, int row_h, int row, const char *text, int on, int current)
 {
@@ -23,12 +27,21 @@ static void draw_row(const UiEnv *env, const Rect *pop, int row_h, int row, cons
     vst_color(env->vh, 1);
 }
 
+static void draw_all(const UiEnv *env, const Rect *pop, int row_h, int rows, int top,
+                     const char *(*item)(const void *ctx, int index), const void *ctx, int current, int sel)
+{
+    int i;
+
+    for (i = 0; i < rows; i++)
+        draw_row(env, pop, row_h, i, item(ctx, top + i), top + i == sel, top + i == current);
+}
+
 int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const void *ctx, int index),
                  const void *ctx, int count, int current)
 {
     short vh = env->vh;
     int row_h = env->cell_h + 2;
-    int i, longest = 0, rows, hover = -1, result = -1, prev_down = 1;
+    int i, longest = 0, rows, top, sel = -1, result = -1, prev_down = 1, last_x = -1, last_y = -1;
     Rect pop;
     EVMULT_IN in;
     EVMULT_OUT out;
@@ -45,7 +58,12 @@ int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const
     }
     pop = popup_rect(anchor, (longest + 2) * env->cell_w + 6, row_h, count, &env->desk);
     rows = (pop.h - 2) / row_h;
+    if (rows > count)
+        rows = count;
+    top = popup_top(count, rows, current);
 
+    wind_update(BEG_UPDATE);            /* nobody else draws or reads the mouse meanwhile */
+    wind_update(BEG_MCTRL);
     form_dial(FMD_START, 0, 0, 0, 0, pop.x, pop.y, pop.w + 2, pop.h + 2);
     v_hide_c(vh);
     vswr_mode(vh, MD_TRANS);
@@ -54,8 +72,7 @@ int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const
     vst_effects(vh, 0);
     vs_clip(vh, 0, (short[4]){0, 0, 0, 0});
     draw_box(vh, &pop, 0, 1);
-    for (i = 0; i < rows; i++)
-        draw_row(env, &pop, row_h, i, item(ctx, i), 0, i == current);
+    draw_all(env, &pop, row_h, rows, top, item, ctx, current, sel);
     v_show_c(vh, 1);
 
     memset(&in, 0, sizeof in);
@@ -63,31 +80,61 @@ int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const
     in.emi_tlow = TICK_MS;
     for (;;) {
         short mx, my, mb;
-        int row, down;
+        int row, down, want = sel, newtop = top;
         short events = evnt_multi_fast(&in, msg, &out);
 
-        if ((events & MU_KEYBD) && ((out.emo_kreturn >> 8) & 0xff) == SCAN_ESC)
-            break;
+        if (events & MU_KEYBD) {
+            int scan = (out.emo_kreturn >> 8) & 0xff;
+
+            if (scan == SCAN_ESC)
+                break;
+            if ((scan == SCAN_RETURN || scan == SCAN_ENTER) && sel >= 0) {
+                result = sel;
+                break;
+            }
+            if (scan == SCAN_UP)
+                want = sel < 0 ? count - 1 : sel - 1;
+            else if (scan == SCAN_DOWN)
+                want = sel < 0 ? 0 : sel + 1;
+            if (want < 0)
+                want = 0;
+            if (want > count - 1)
+                want = count - 1;
+            if (want < newtop)
+                newtop = want;
+            if (want >= newtop + rows)
+                newtop = want - rows + 1;
+        }
         vq_mouse(vh, &mb, &mx, &my);
         down = mb & 1;
         row = popup_row(&pop, row_h, mx, my);
-        if (row != hover) {
+        if (!(events & MU_KEYBD) && (mx != last_x || my != last_y || row == 0 || row == rows - 1)) {
+            /* the pointer drives the highlight; resting on the first or last row scrolls the rest into view */
+            last_x = mx;
+            last_y = my;
+            want = row >= 0 ? top + row : -1;
+            if (row == 0 && top > 0)
+                newtop = top - 1;
+            else if (row == rows - 1 && top + rows < count && rows > 1)
+                newtop = top + 1;
+            if (newtop != top)
+                want = row == 0 ? newtop : newtop + rows - 1;
+        }
+        if (want != sel || newtop != top) {
             v_hide_c(vh);
-            if (hover >= 0)
-                draw_row(env, &pop, row_h, hover, item(ctx, hover), 0, hover == current);
-            if (row >= 0)
-                draw_row(env, &pop, row_h, row, item(ctx, row), 1, row == current);
+            top = newtop;
+            sel = want;
+            draw_all(env, &pop, row_h, rows, top, item, ctx, current, sel);
             v_show_c(vh, 1);
-            hover = row;
         }
         if (prev_down && !down) {
             /* released: over a row after a drag chooses it; a plain click's release lands on the control */
             if (row >= 0) {
-                result = row;
+                result = top + row;
                 break;
             }
         } else if (!prev_down && down) {
-            result = row;               /* a press on a row chooses it, anywhere else cancels */
+            result = row >= 0 ? top + row : -1;     /* a press on a row chooses it, anywhere else cancels */
             break;
         }
         prev_down = down;
@@ -102,5 +149,7 @@ int popup_choose(const UiEnv *env, const Rect *anchor, const char *(*item)(const
     }
     vswr_mode(vh, MD_REPLACE);
     form_dial(FMD_FINISH, 0, 0, 0, 0, pop.x, pop.y, pop.w + 2, pop.h + 2);
+    wind_update(END_MCTRL);
+    wind_update(END_UPDATE);
     return result;
 }

@@ -275,13 +275,19 @@ static void test_viewmodel(void)
     WinState ws;
 
     /* the Unicode candidates run through the blocks in order */
-    CHECK_INT(unicode_candidate(0), 0x21);
-    CHECK_INT(unicode_candidate(93), 0x7E);
-    CHECK_INT(unicode_candidate(94), 0xA1);
-    CHECK_INT(unicode_candidate(unicode_candidate_count() - 1), 0x26FF);
-    CHECK_INT(unicode_candidate(unicode_candidate_count()), -1);
-    CHECK_INT(unicode_candidate(-1), -1);
-    CHECK(unicode_candidate_count() > 1000 && unicode_candidate_count() < 4000);
+    /* the repertoire walks the font's range, skipping what cannot be shown */
+    CHECK_INT(repertoire_next(0, 255, -1, 0), 1);
+    CHECK_INT(repertoire_next(0, 255, 31, 0), 33);          /* not the space */
+    CHECK_INT(repertoire_next(33, 126, -1, 0), 33);
+    CHECK_INT(repertoire_next(33, 126, 126, 0), -1);
+    CHECK_INT(repertoire_next(8, 8, -1, 0), 8);             /* a font of one check mark */
+    CHECK_INT(repertoire_next(8, 8, 8, 0), -1);
+    CHECK_INT(repertoire_next(0x7E, 0xA0, 0x7E, 1), 0xA0);
+    CHECK_INT(repertoire_next(0x7E, 0xA1, 0x7E, 1), 0xA0);  /* no C1 controls in Unicode */
+    CHECK_INT(repertoire_next(0xD7FF, 0xE000, 0xD7FF, 1), 0xE000);
+    CHECK_INT(repertoire_next(0xFFFE, 0x10010, 0xFFFE, 1), 0xFFFF);
+    CHECK_INT(repertoire_next(0xFFFE, 0x10010, 0xFFFF, 1), -1);
+    CHECK_INT(repertoire_next(10, 5, -1, 0), -1);
 
     /* the popup sits under its anchor and stays on the screen */
     {
@@ -307,20 +313,24 @@ static void test_viewmodel(void)
         anchor.x = 10;
         anchor.y = 170;
         pop = popup_rect(&anchor, 40, 10, 30, &screen);
-        CHECK_INT(pop.h, 2 + 10 * ((200 - 186 - 2) / 10));  /* only the rows that fit */
+        CHECK_INT(pop.h, 2 + 10 * ((170 - 2) / 10));   /* more room above: it opens upwards */
+        CHECK_INT(pop.y + pop.h, 170);
+        anchor.y = 20;
+        pop = popup_rect(&anchor, 40, 10, 30, &screen);
+        CHECK_INT(pop.h, 2 + 10 * ((200 - 36 - 2) / 10));   /* only the rows that fit */
+        anchor.y = 180;
+        pop = popup_rect(&anchor, 40, 10, 1, &screen);
+        CHECK(pop.y >= 0 && pop.y + pop.h <= 200);          /* inside the desktop */
         anchor.y = 195;
         pop = popup_rect(&anchor, 40, 10, 5, &screen);
-        CHECK_INT(pop.h, 12);                           /* at least one */
+        CHECK(pop.y >= 0 && pop.y + pop.h <= 200);
+        CHECK(pop.h >= 12);                             /* at least one */
+        CHECK_INT(popup_top(5, 8, 2), 0);               /* all fit */
+        CHECK_INT(popup_top(30, 8, 0), 0);
+        CHECK_INT(popup_top(30, 8, 15), 11);            /* the current one stays visible */
+        CHECK_INT(popup_top(30, 8, 29), 22);
     }
 
-    /* the repertoire skips the controls, the space and DEL */
-    CHECK_INT(repertoire_count(), 94 + 128);
-    CHECK_INT(repertoire_char(0), 33);
-    CHECK_INT(repertoire_char(93), 126);
-    CHECK_INT(repertoire_char(94), 128);
-    CHECK_INT(repertoire_char(221), 255);
-    CHECK_INT(repertoire_char(222), -1);
-    CHECK_INT(repertoire_char(-1), -1);
     CHECK_INT(style_step(0, -1, 3), 0);
     CHECK_INT(style_step(1, 1, 3), 2);
     CHECK_INT(style_step(2, 1, 3), 2);

@@ -248,16 +248,20 @@ const char *const specimen_preview[PREVIEW_LINES] = {
     "0123456789"
 };
 
-int repertoire_count(void)
+int repertoire_next(int first, int last, int after, int unicode)
 {
-    return (126 - 33 + 1) + (255 - 128 + 1);
-}
+    int c = after < first - 1 ? first - 1 : after;
 
-int repertoire_char(int index)
-{
-    if (index < 0 || index >= repertoire_count())
-        return -1;
-    return index < 126 - 33 + 1 ? 33 + index : 128 + (index - (126 - 33 + 1));
+    if (unicode && last > 0xFFFF)
+        last = 0xFFFF;
+    while (++c <= last) {
+        if (c < 1 || c == 32)                       /* NUL cannot be drawn as a string; the space is blank */
+            continue;
+        if (unicode && ((c >= 0x7F && c <= 0x9F) || (c >= 0xD800 && c <= 0xDFFF)))
+            continue;                               /* controls and surrogates */
+        return c;
+    }
+    return -1;
 }
 
 int style_step(int current, int delta, int count)
@@ -276,7 +280,7 @@ int style_step(int current, int delta, int count)
 Rect popup_rect(const Rect *anchor, int min_w, int row_h, int count, const Rect *screen)
 {
     Rect r;
-    int rows, room;
+    int rows, below, above, bottom = screen->y + screen->h;
 
     r.w = anchor->w > min_w ? anchor->w : min_w;
     if (r.w > screen->w)
@@ -287,12 +291,34 @@ Rect popup_rect(const Rect *anchor, int min_w, int row_h, int count, const Rect 
     if (r.x < screen->x)
         r.x = screen->x;
     r.y = anchor->y + anchor->h;
-    room = (screen->y + screen->h - r.y - 2) / row_h;
-    rows = count < room ? count : room;
+    below = (bottom - r.y - 2) / row_h;
+    above = (anchor->y - screen->y - 2) / row_h;
+    if (count > below && above > below) {           /* more room over the anchor */
+        rows = count < above ? count : above;
+        r.y = anchor->y - (rows * row_h + 2);
+    } else {
+        rows = count < below ? count : below;
+    }
     if (rows < 1)
         rows = 1;
     r.h = rows * row_h + 2;
+    if (r.y + r.h > bottom)                         /* always inside the screen */
+        r.y = bottom - r.h;
+    if (r.y < screen->y)
+        r.y = screen->y;
     return r;
+}
+
+int popup_top(int count, int rows, int current)
+{
+    int top;
+
+    if (count <= rows || current < 0)
+        return 0;
+    top = current - rows / 2;
+    if (top > count - rows)
+        top = count - rows;
+    return top < 0 ? 0 : top;
 }
 
 int popup_row(const Rect *popup, int row_h, int x, int y)
@@ -303,49 +329,4 @@ int popup_row(const Rect *popup, int row_h, int x, int y)
         return -1;
     row = (y - popup->y - 1) / row_h;
     return row < (popup->h - 2) / row_h ? row : -1;
-}
-
-/* first, last */
-static const unsigned short unicode_blocks[][2] = {
-    { 0x0021, 0x007E },     /* Basic Latin */
-    { 0x00A1, 0x00FF },     /* Latin-1 */
-    { 0x0100, 0x024F },     /* Latin Extended-A and B */
-    { 0x0370, 0x03FF },     /* Greek */
-    { 0x0400, 0x04FF },     /* Cyrillic */
-    { 0x2010, 0x2027 },     /* punctuation */
-    { 0x2030, 0x205E },
-    { 0x20A0, 0x20BF },     /* currency */
-    { 0x2100, 0x214F },     /* letterlike */
-    { 0x2190, 0x21FF },     /* arrows */
-    { 0x2200, 0x22FF },     /* mathematics */
-    { 0x2500, 0x257F },     /* box drawing */
-    { 0x25A0, 0x25FF },     /* shapes */
-    { 0x2600, 0x26FF }      /* symbols */
-};
-
-#define UNICODE_BLOCKS (int)(sizeof unicode_blocks / sizeof unicode_blocks[0])
-
-int unicode_candidate_count(void)
-{
-    int i, n = 0;
-
-    for (i = 0; i < UNICODE_BLOCKS; i++)
-        n += unicode_blocks[i][1] - unicode_blocks[i][0] + 1;
-    return n;
-}
-
-int unicode_candidate(int index)
-{
-    int i;
-
-    if (index < 0)
-        return -1;
-    for (i = 0; i < UNICODE_BLOCKS; i++) {
-        int n = unicode_blocks[i][1] - unicode_blocks[i][0] + 1;
-
-        if (index < n)
-            return unicode_blocks[i][0] + index;
-        index -= n;
-    }
-    return -1;
 }
