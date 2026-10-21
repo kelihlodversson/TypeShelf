@@ -35,8 +35,10 @@ jobs:
           test "$(od -A n -t x1 -N 2 build/m68k/TYPESHLF.PRG | tr -d ' ')" = 601a
       - uses: actions/upload-artifact@v4
         with:
-          name: TYPESHLF.PRG
-          path: build/m68k/TYPESHLF.PRG
+          name: TypeShelf-m68k
+          path: |
+            build/m68k/TYPESHLF.PRG
+            build/m68k/TYPESHLF.RSC
 
   arm:
     name: Build for ARM
@@ -54,8 +56,10 @@ jobs:
         run: make arm
       - uses: actions/upload-artifact@v4
         with:
-          name: TYPESHLF-arm.prg
-          path: build/arm/TYPESHLF.PRG
+          name: TypeShelf-arm
+          path: |
+            build/arm/TYPESHLF.PRG
+            build/arm/TYPESHLF.RSC
 
   check-x86_64:
     name: Compile for x32

@@ -45,7 +45,7 @@ then (see "Portability").
 - The look is black and white with fill patterns. Nothing depends on colour.
 - Chrome (toolbar, labels) uses the system font; only the previews use the
   font being shown.
-- Toolbar buttons are monochrome bitmaps compiled in, in 16x16 and 8x8 sizes.
+- Toolbar buttons are G_ICON objects in `TYPESHLF.RSC`, monochrome, in 16x16 and 8x8 sizes. Colour icons (G_CICON) can sit beside them in the same file later.
 
 ## Application structure
 
@@ -61,9 +61,13 @@ then (see "Portability").
 | `platform/*` | cookies, file copy, process; the only arch-specific code | OS |
 | `vdi_if` | the seam between pure logic and VDI calls | gemlib |
 
-The toolbar trees are built in code, not loaded from an `.rsc` file: RSC files
-are big-endian m68k data and would need byte-swapping on ARM and x86, and
-building them lets layout depend on the screen size.
+The menu bar is built in code: its layout follows the screen, and the AES has
+fixed expectations of its tree (see `src/ui/menu.c`). The toolbar's icons come
+from a resource file, `TYPESHLF.RSC`, which sits next to the program. It is the
+classic big-endian format, which pTOS's portable loader reads on every
+architecture, so nothing needs byte-swapping. `tools/mkrsc.py` writes it from
+the text bitmaps in `res/icons/` (no resource editor needed), and the build
+puts a copy beside each `TYPESHLF.PRG`.
 
 `File ▸ New Window` creates another window; each has its own state.
 

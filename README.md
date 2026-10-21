@@ -10,15 +10,20 @@ built with [gemlib](https://github.com/kelihlodversson/gemlib) and
 and x86 is compile-checked, until gemlib and pTOS can run a GEM application
 there.
 
-![Type Shelf's first run on EmuTOS: an alert with the family and face counts, the GDOS and the OS](docs/images/screenshot-emutos-low.png)
+![Type Shelf's window on EmuTOS: the menu bar, the toolbar with the three view buttons and the zoom slider, and a placeholder where the views will go](docs/images/screenshot-emutos-low.png)
 
-*Today's build under Hatari on pTOS (m68k, ST low, 320x200): it reads the
-installed fonts and reports the GDOS and the OS.  With no GDOS only the system
-font is there, hence one family and one face.*
+*Today's build under Hatari on pTOS (m68k, ST low, 320x200): the menu bar, a
+window with its toolbar (Icons, Samples and List buttons and the zoom slider),
+and a placeholder where the views will go.*
+
+Run `TYPESHLF.PRG` with `TYPESHLF.RSC` (the toolbar's icons) in the same folder.
 
 The foundation is in place: the font list, the GDOS and OS decoding, the layout
-maths, a real font source over gemlib, and CI. The windows, views, Install Font
-and the About dialog are still to come. The design is in
+maths, a real font source over gemlib, and CI.  On top of it are the menu bar
+(New Window, Close, Quit, the View entries, About), windows that follow the
+AES (redraw, move, resize, full, close) and the toolbar with its zoom slider.
+The views, Install Font and the full About dialog are still to come.  The
+design is in
 [docs/superpowers/specs/2026-10-20-typeshelf-design.md](docs/superpowers/specs/2026-10-20-typeshelf-design.md).
 
 Licence: GPL-2.0-or-later.

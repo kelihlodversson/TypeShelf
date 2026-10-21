@@ -1,8 +1,8 @@
 # Type Shelf -- the design is in docs/superpowers/specs/
 #
 #   make test            host unit tests
-#   make                 build/m68k/TYPESHLF.PRG
-#   make arm             build/arm/TYPESHLF.PRG   (links; not yet run on pTOS)
+#   make                 build/m68k/TYPESHLF.PRG and TYPESHLF.RSC (keep them together)
+#   make arm             build/arm/TYPESHLF.PRG and TYPESHLF.RSC (links; not yet run on pTOS)
 #   make check-x86_64    compile the sources for x32 (no link)
 #   make clean
 #
@@ -18,8 +18,16 @@ LOGIC_SRC += src/fontdb/group.c
 LOGIC_SRC += src/gdosinfo/decode.c
 LOGIC_SRC += src/layout/layout.c
 LOGIC_SRC += src/fontdb/build.c
+LOGIC_SRC += src/ui/rect.c
+LOGIC_SRC += src/ui/command.c
+LOGIC_SRC += src/ui/winstate.c
+LOGIC_SRC += src/ui/toolbar_layout.c
 GEM_SRC   = src/main.c
 GEM_SRC  += src/vdi_if/vdi_if_gem.c
+GEM_SRC  += src/ui/icons.c
+GEM_SRC  += src/ui/menu.c
+GEM_SRC  += src/ui/window.c
+GEM_SRC  += src/ui/app.c
 M68K_PLATFORM_SRC = src/platform/platform.c src/platform/m68k/legacy.c
 GENERIC_PLATFORM_SRC = src/platform/platform.c src/platform/generic/legacy.c
 
@@ -28,7 +36,7 @@ WARN     = -Wall -Wextra
 INCLUDES = -Isrc -I$(GEMLIB) -I$(LIBCMINI)/include
 
 .PHONY: all test arm check-x86_64 clean
-all: build/m68k/TYPESHLF.PRG
+all: build/m68k/TYPESHLF.PRG build/m68k/TYPESHLF.RSC
 
 # ---- host unit tests ---------------------------------------------------
 
@@ -39,6 +47,7 @@ TEST_SRC  += tests/test_group.c
 TEST_SRC  += tests/test_decode.c
 TEST_SRC  += tests/test_layout.c
 TEST_SRC  += tests/test_build.c
+TEST_SRC  += tests/test_ui.c
 CC_HOST    ?= cc
 HOST_FLAGS ?= $(STD) $(WARN) -Werror -g -Isrc -Itests
 
@@ -46,8 +55,17 @@ build/host/tests: $(LOGIC_SRC) $(TEST_SRC) $(wildcard src/*/*.h tests/*.h)
 	mkdir -p build/host
 	$(CC_HOST) $(HOST_FLAGS) $(LOGIC_SRC) $(TEST_SRC) -o $@
 
-test: build/host/tests
+# the resource file with the toolbar's icons, which sits next to the program
+ICON_SRC = $(wildcard res/icons/*.txt)
+PYTHON  ?= python3
+
+build/%/TYPESHLF.RSC: tools/mkrsc.py $(ICON_SRC)
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/mkrsc.py $@
+
+test: build/host/tests build/host/TYPESHLF.RSC
 	./build/host/tests
+	$(PYTHON) tools/mkrsc.py --check build/host/TYPESHLF.RSC
 
 # ---- the libraries -----------------------------------------------------
 
@@ -118,10 +136,12 @@ build/m68k/TYPESHLF.PRG: $(M68K_OBJ) $(GEMLIB_A) $(LIBCMINI_A) $(LIBCMINI_CRT)
 
 ARM_PREFIX   ?= arm-none-eabi-
 ARM_CC        = $(ARM_PREFIX)gcc
-ARM_ABI       = -mfloat-abi=hard -mfpu=vfp -mword-relocations
+# the same CPU flags pTOS builds its own ARM programs with
+ARM_ABI       = -march=armv7-a -mtune=cortex-a7 -marm -mfpu=neon-vfpv4 -mfloat-abi=hard \
+    -mword-relocations
 ARM_LIBGEM    = build/arm/lib/libgem.a
 ARM_LIBCMINI  = build/arm/lib/libcmini.a
-ARM_CRT       = build/arm/lib/crt0.o
+ARM_CRT       = build/arm/lib/minicrt0.o
 
 # gemlib's own include/arm directory has the compiler.h its headers need
 ARM_CFLAGS = $(STD) $(WARN) -Werror -O2 -ffreestanding $(ARM_ABI) \
@@ -140,7 +160,7 @@ $(ARM_LIBCMINI): $(LIBCMINI_REV)
 	$(LIBCMINI_COPY) build/arm/libcmini/
 	$(MAKE) -C build/arm/libcmini ptos_arm_defconfig
 	$(MAKE) -C build/arm/libcmini dirs libs startups
-	cp build/arm/libcmini/build/libcmini.a build/arm/libcmini/build/objs/crt0.o $(dir $@)
+	cp build/arm/libcmini/build/libcmini.a build/arm/libcmini/build/objs/minicrt0.o $(dir $@)
 
 $(ARM_CRT): $(ARM_LIBCMINI)
 
@@ -148,11 +168,13 @@ build/arm/%.o: src/%.c $(wildcard src/*/*.h) $(GEMLIB_H)
 	@mkdir -p $(dir $@)
 	$(ARM_CC) $(ARM_CFLAGS) -c $< -o $@
 
+# -q keeps the relocations in the file: pTOS loads a program wherever there is
+# room and applies them (doc/elfload.txt in pTOS), so it must not be stripped
 build/arm/TYPESHLF.PRG: $(ARM_OBJ) $(ARM_LIBGEM) $(ARM_LIBCMINI) $(ARM_CRT)
-	$(ARM_CC) $(ARM_ABI) -nostdlib $(ARM_CRT) $(ARM_OBJ) \
+	$(ARM_CC) $(ARM_ABI) -nostdlib -Wl,-q -Wl,-Ttext=0 -Wl,-e_start $(ARM_CRT) $(ARM_OBJ) \
 	    -Lbuild/arm/lib -lcmini -lgem -lgcc -lcmini -o $@
 
-arm: build/arm/TYPESHLF.PRG
+arm: build/arm/TYPESHLF.PRG build/arm/TYPESHLF.RSC
 
 # ---- x86: compile only, until gemlib has a trap layer for it -----------
 

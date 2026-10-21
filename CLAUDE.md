@@ -38,12 +38,12 @@ are done, a final PR merges the epic branch into `main`.
 ## Building
 
     make test             host unit tests (native compiler)
-    make                  build/m68k/TYPESHLF.PRG
+    make                  build/m68k/TYPESHLF.PRG and TYPESHLF.RSC (the icons; keep them together)
     make arm              build/arm/TYPESHLF.PRG (links; not yet run on pTOS)
     make check-x86_64     compile the sources for x32 (no link)
     make clean
 
-Needs GNU make (on macOS: `gmake`, Apple's is 3.81) and rsync, and for m68k the
+Needs GNU make (on macOS: `gmake`, Apple's is 3.81), python3 (it writes the resource file) and rsync, and for m68k the
 `m68k-atari-mintelf-` toolchain on `PATH` (for ARM, `arm-none-eabi-`), plus
 `pip3 install kconfiglib` for libcmini's configuration.
 `docs/toolchains.md` says where to get them.
