@@ -224,6 +224,18 @@ static void draw_content(const UiEnv *env, const Window *w)
     draw_text(env->vh, c.x + 8, c.y + 8 + env->cell_h + 2, line);
 }
 
+/* the views leave the workstation in their own fonts: the toolbar, the
+ * placeholder and other windows draw in the system font */
+static void system_text(const UiEnv *env)
+{
+    short a, b, c, d;
+
+    vst_font(env->vh, env->sys_font);
+    vst_height(env->vh, env->sys_char_h, &a, &b, &c, &d);
+    vst_effects(env->vh, 0);
+    vst_color(env->vh, 1);
+}
+
 void window_draw(const UiEnv *env, Window *w, const Rect *area)
 {
     GRECT g;
@@ -240,6 +252,7 @@ void window_draw(const UiEnv *env, Window *w, const Rect *area)
         if (rect_intersect(&r, area, &clip)) {
             draw_clip(vh, &clip);
             drawing_clip = clip;
+            system_text(env);
             draw_toolbar(env, w);
             if (w->state.mode == MODE_OVERVIEW) {
                 Rect content = window_content_rect(w);
@@ -257,6 +270,7 @@ void window_draw(const UiEnv *env, Window *w, const Rect *area)
         }
         wind_get_grect(w->handle, WF_NEXTXYWH, &g);
     }
+    system_text(env);
     vs_clip(vh, 0, (short[4]){0, 0, 0, 0});
     v_show_c(vh, 1);
     wind_update(END_UPDATE);

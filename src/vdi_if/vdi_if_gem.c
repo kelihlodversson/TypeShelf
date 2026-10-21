@@ -48,7 +48,7 @@ static int probe_xfnt(const GemSource *gs)
  * uninitialised outputs, so its reply is not trusted.  Instead ask the VDI
  * what height it ended up with (vqt_attributes): a vector face given two
  * neighbouring odd sizes must report two different heights.  A bitmap face
- * snaps to its strikes, so the faces are tried in turn.
+ * snaps to its strikes, so every face is tried in turn, until one answers.
  */
 static int char_height(short vh)
 {
@@ -62,10 +62,10 @@ static int probe_arbpt(const GemSource *gs)
 {
     short a, b, c, d;
     short saved[10];
-    int face, found = 0, limit = gs->count < 64 ? gs->count : 64;
+    int face, found = 0;
 
     vqt_attributes(gs->handle, saved);
-    for (face = 1; face <= limit && !found; face++) {
+    for (face = 1; face <= gs->count && !found; face++) {
         char name[34];
         short id = vqt_name(gs->handle, (short)face, name);
         int h1, h2;
