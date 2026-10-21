@@ -96,6 +96,38 @@ static void test_rect(void)
     CHECK(!rect_contains(&a, -1, 5));
 }
 
+static void test_initial(void)
+{
+    Rect big = { 0, 19, 1280, 781 }, small = { 0, 11, 320, 189 }, r;
+
+    /* a big screen: 800x600, centred */
+    r = rect_initial(&big, 0, 800, 600, 12);
+    CHECK_INT(r.w, 800);
+    CHECK_INT(r.h, 600);
+    CHECK_INT(r.x, 240);
+    CHECK_INT(r.y, 19 + 90);
+    /* the cascade moves the next ones down and right, six deep, then starts again */
+    r = rect_initial(&big, 1, 800, 600, 12);
+    CHECK_INT(r.x, 252);
+    CHECK_INT(r.y, 19 + 90 + 12);
+    r = rect_initial(&big, 6, 800, 600, 12);
+    CHECK_INT(r.x, 240);
+    /* a small screen: the whole desktop, shrinking with the cascade to stay on it */
+    r = rect_initial(&small, 0, 800, 600, 12);
+    CHECK(r.x == 0 && r.y == 11 && r.w == 320 && r.h == 189);
+    r = rect_initial(&small, 2, 800, 600, 12);
+    CHECK(r.x == 24 && r.y == 35 && r.w == 296 && r.h == 165);
+    /* always inside the desktop */
+    {
+        int c;
+
+        for (c = 0; c < 12; c++) {
+            r = rect_initial(&big, c, 800, 600, 12);
+            CHECK(r.x >= big.x && r.y >= big.y && r.x + r.w <= big.x + big.w && r.y + r.h <= big.y + big.h);
+        }
+    }
+}
+
 static void test_toolbar(void)
 {
     ToolbarLayout tl;
@@ -182,5 +214,6 @@ void test_ui(void)
     test_commands();
     test_winstate();
     test_rect();
+    test_initial();
     test_toolbar();
 }

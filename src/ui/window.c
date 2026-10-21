@@ -6,6 +6,9 @@
 #include "ui/window.h"
 
 #define WINDOW_PARTS    (NAME | CLOSER | FULLER | MOVER | SIZER | UPARROW | DNARROW | VSLIDE)
+#define INITIAL_W       800     /* a window opens at most this big; the user can enlarge it */
+#define INITIAL_H       600
+#define CASCADE_STEP    12
 #define MIN_W           140
 #define MIN_H           80
 
@@ -44,11 +47,7 @@ Window *window_open(const UiEnv *env, int cascade)
         free(w);
         return NULL;
     }
-    r = env->desk;
-    r.x += 12 * (cascade % 6);
-    r.y += 12 * (cascade % 6);
-    r.w -= 12 * (cascade % 6);
-    r.h -= 12 * (cascade % 6);
+    r = rect_initial(&env->desk, cascade, INITIAL_W, INITIAL_H, CASCADE_STEP);
     to_grect(&r, &g);
     window_refresh(env, w);
     wind_open_grect(w->handle, &g);
