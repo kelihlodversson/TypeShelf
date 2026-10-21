@@ -5,6 +5,8 @@
 #include "ui/command.h"
 #include "ui/icons.h"
 #include "ui/menu.h"
+#include "ui/views.h"
+#include "layout/layout.h"
 #include "ui/window.h"
 
 typedef struct {
@@ -107,6 +109,13 @@ static void execute(App *app, Command cmd)
         if (w != NULL && winstate_apply(&w->state, cmd))
             redraw_all(app, w);
         break;
+    case CMD_LEFT:
+    case CMD_RIGHT:
+    case CMD_UP:
+    case CMD_DOWN:
+        if (w != NULL && view_navigate(&app->env, w, cmd))
+            redraw_all(app, w);
+        break;
     default:
         break;
     }
@@ -141,6 +150,30 @@ static void on_message(App *app, const short msg[8])
     case WM_CLOSED:
         if (w != NULL)
             close_window(app, w);
+        break;
+    case WM_ARROWED:
+        if (w != NULL) {
+            Rect c = window_content_rect(w);
+            int line = 2 * app->env.cell_h;
+            int page = c.h > line ? c.h - line : c.h;
+            int y = w->state.scroll_y;
+
+            switch (msg[4]) {
+            case WA_UPLINE: y -= line; break;
+            case WA_DNLINE: y += line; break;
+            case WA_UPPAGE: y -= page; break;
+            case WA_DNPAGE: y += page; break;
+            default: break;
+            }
+            window_scroll_to(&app->env, w, y);
+        }
+        break;
+    case WM_VSLID:
+        if (w != NULL) {
+            Rect c = window_content_rect(w);
+
+            window_scroll_to(&app->env, w, scroll_offset_from_slider(msg[4], view_content_height(&app->env, w), c.h));
+        }
         break;
     case WM_FULLED:
         if (w != NULL) {
@@ -180,7 +213,7 @@ static void on_message(App *app, const short msg[8])
     }
 }
 
-static void on_click(App *app, int x, int y)
+static void on_click(App *app, int x, int y, int clicks)
 {
     Window *w = find_window(app, wind_find(x, y));
     ToolbarItem item;
@@ -193,6 +226,13 @@ static void on_click(App *app, int x, int y)
         return;
     }
     item = window_toolbar_hit(w, x, y);
+    if (item == TB_NONE) {
+        Rect content = window_content_rect(w);
+
+        if (rect_contains(&content, x, y) && view_click(&app->env, w, x, y, clicks))
+            redraw_all(app, w);
+        return;
+    }
     switch (item) {
     case TB_BACK:       execute(app, CMD_BACK); break;
     case TB_VIEW1:      execute(app, CMD_VIEW_1); break;
@@ -203,7 +243,7 @@ static void on_click(App *app, int x, int y)
     }
 }
 
-int app_run(short vh, const FontList *fonts, const char *about)
+int app_run(short vh, const FontList *fonts, const char *about, int have_arbpt)
 {
     App app;
     short cw, ch, box_w, box_h;
@@ -216,9 +256,17 @@ int app_run(short vh, const FontList *fonts, const char *about)
     app.about = about;
     app.env.vh = vh;
     app.env.fonts = fonts;
+    app.env.have_arbpt = have_arbpt;
     graf_handle(&cw, &ch, &box_w, &box_h);        /* the system font's cell, and its box */
     app.env.cell_w = cw;
     app.env.cell_h = ch;
+    {
+        short attrib[10];
+
+        vqt_attributes(vh, attrib);
+        app.env.sys_font = attrib[0];
+        app.env.sys_char_h = attrib[7];
+    }
     wind_get_grect(0, WF_WORKXYWH, &desk);
     app.env.desk.x = desk.g_x;
     app.env.desk.y = desk.g_y;
@@ -246,7 +294,7 @@ int app_run(short vh, const FontList *fonts, const char *about)
 
     memset(&in, 0, sizeof in);
     in.emi_flags = MU_MESAG | MU_BUTTON | MU_KEYBD;
-    in.emi_bclicks = 1;
+    in.emi_bclicks = 2;                  /* a double click comes as one event with emo_mclicks 2 */
     in.emi_bmask = 1;
     in.emi_bstate = 1;
     while (!app.quit) {
@@ -260,7 +308,7 @@ int app_run(short vh, const FontList *fonts, const char *about)
         if (events & MU_BUTTON) {
             /* ask for the press and the release in turn, so a held button is one click */
             if (!app.button_down)
-                on_click(&app, out.emo_mouse.p_x, out.emo_mouse.p_y);
+                on_click(&app, out.emo_mouse.p_x, out.emo_mouse.p_y, out.emo_mclicks);
             app.button_down = !app.button_down;
             in.emi_bstate = app.button_down ? 0 : 1;
         }

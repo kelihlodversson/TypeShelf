@@ -3,6 +3,7 @@
 #include <gemx.h>
 #include "fontdb/group.h"
 #include "vdi_if/gem_source.h"
+#include "vdi_if/vdi_extra.h"
 
 #define XFNT_FLAGS_NAMES  0x07  /* full name, family name, style name */
 
@@ -40,6 +41,52 @@ static int probe_xfnt(const GemSource *gs)
     return id > 0 &&
            vqt_xfntinfo(gs->handle, XFNT_FLAGS_NAMES, id, 0, &info) == id &&
            info.family_name[0] != '\0';
+}
+
+/*
+ * vst_arbpt() on a VDI without it returns nothing, and gemlib hands back
+ * uninitialised outputs, so its reply is not trusted.  Instead ask the VDI
+ * what height it ended up with (vqt_attributes).  The face is first set to a
+ * small size with vst_point(); a VDI that ignores vst_arbpt() then still
+ * reports that height after being asked for 60 pt, while one that has it
+ * reports a much taller one, and a smaller one again for 12 pt.  The sizes
+ * are far apart because the heights are whole pixels.  A bitmap face snaps
+ * to its strikes, so every face is tried in turn, until one answers.
+ */
+static int char_height(short vh)
+{
+    short attrib[10];
+
+    vqt_attributes(vh, attrib);
+    return attrib[7];
+}
+
+static int probe_arbpt(const GemSource *gs)
+{
+    short a, b, c, d;
+    short saved[10];
+    int face, found = 0;
+
+    vqt_attributes(gs->handle, saved);
+    for (face = 1; face <= gs->count && !found; face++) {
+        char name[34];
+        short id = vqt_name(gs->handle, (short)face, name);
+        int h0, h1, h2;
+
+        if (id <= 0)
+            continue;
+        vst_font(gs->handle, id);
+        vst_point(gs->handle, 8, &a, &b, &c, &d);
+        h0 = char_height(gs->handle);
+        vst_arbpt(gs->handle, 60, &a, &b, &c, &d);
+        h1 = char_height(gs->handle);
+        vst_arbpt(gs->handle, 12, &a, &b, &c, &d);
+        h2 = char_height(gs->handle);
+        found = h0 > 0 && h1 > h0 && h2 > 0 && h2 < h1;
+    }
+    vst_font(gs->handle, saved[0]);
+    vst_height(gs->handle, saved[7], &a, &b, &c, &d);
+    return found;
 }
 
 static int gem_face_get(void *ctx, int index, VdiFace *out)
@@ -109,6 +156,7 @@ int gem_source_open(GemSource *gs, VdiFontSource *out)
     gs->count = (short)(work_out[10] + extra);
     gs->have_ext = probe_ext(gs);
     gs->have_xfnt = probe_xfnt(gs);
+    gs->have_arbpt = probe_arbpt(gs);
 
     out->face_count = gem_face_count;
     out->face_get = gem_face_get;

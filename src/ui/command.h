@@ -15,7 +15,11 @@ typedef enum {
     CMD_VIEW_2,         /* Show as Samples */
     CMD_VIEW_3,         /* Show as List (not in a single font) */
     CMD_BACK,           /* leave a single font */
-    CMD_OPEN            /* enter the selected family */
+    CMD_OPEN,           /* enter the selected family */
+    CMD_LEFT,           /* move the selection (the arrow keys) */
+    CMD_RIGHT,
+    CMD_UP,
+    CMD_DOWN
 } Command;
 
 /* AES key bits in kmeta, as evnt_multi() reports them */

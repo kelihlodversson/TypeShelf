@@ -1,0 +1,44 @@
+#include "ui/draw.h"
+
+void draw_clip(short vh, const Rect *r)
+{
+    short pxy[4];
+
+    pxy[0] = (short)r->x;
+    pxy[1] = (short)r->y;
+    pxy[2] = (short)(r->x + r->w - 1);
+    pxy[3] = (short)(r->y + r->h - 1);
+    vs_clip(vh, 1, pxy);
+}
+
+void draw_box(short vh, const Rect *r, int fill_color, int outline)
+{
+    short bar[4], line[10];
+
+    bar[0] = (short)r->x;
+    bar[1] = (short)r->y;
+    bar[2] = (short)(r->x + r->w - 1);
+    bar[3] = (short)(r->y + r->h - 1);
+    vsf_interior(vh, FIS_SOLID);
+    vsf_color(vh, (short)fill_color);
+    vsf_perimeter(vh, 0);
+    v_bar(vh, bar);
+    if (!outline)
+        return;
+    line[0] = bar[0]; line[1] = bar[1];
+    line[2] = bar[2]; line[3] = bar[1];
+    line[4] = bar[2]; line[5] = bar[3];
+    line[6] = bar[0]; line[7] = bar[3];
+    line[8] = bar[0]; line[9] = bar[1];
+    vsl_color(vh, 1);
+    vsl_type(vh, 1);
+    v_pline(vh, 5, line);
+}
+
+void draw_text(short vh, int x, int y, const char *s)
+{
+    short dummy_h, dummy_v;
+
+    vst_alignment(vh, 0, 5, &dummy_h, &dummy_v);
+    v_gtext(vh, (short)x, (short)y, (char *)s);
+}
