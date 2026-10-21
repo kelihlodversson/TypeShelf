@@ -176,6 +176,7 @@ static void draw_style_pulldown(const UiEnv *env, const Window *w)
     const FontList *list = env->fonts;
     const char *label = "Regular";
     char text[13];
+    int chars = toolbar_style_chars(&w->tb, env->cell_w);
 
     r.x += work.x;
     r.y += work.y;
@@ -186,7 +187,7 @@ static void draw_style_pulldown(const UiEnv *env, const Window *w)
         if (w->state.style >= 0 && w->state.style < f->style_count)
             label = f->styles[w->state.style].style;
     }
-    snprintf(text, sizeof text, "%.11s", label);
+    snprintf(text, sizeof text, "%.*s", chars, label);
     vst_effects(env->vh, winstate_style_enabled(&w->state) ? 0 : 2);   /* light when disabled */
     text_at(env->vh, r.x + 3, r.y + (r.h - env->cell_h) / 2, text);
     text_at(env->vh, r.x + r.w - env->cell_w - 2, r.y + (r.h - env->cell_h) / 2, "\x1f");

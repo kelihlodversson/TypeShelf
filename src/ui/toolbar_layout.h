@@ -33,6 +33,11 @@ typedef struct {
  * the system font's cell; the style pulldown is 12 cells wide. */
 void toolbar_layout(ToolbarLayout *tl, int work_w, int char_w, WinMode mode);
 
+/* How many characters of a style name fit in the pulldown (at most 10, in the full 12 cell pulldown): its text
+ * starts 3 pixels in and the arrow, a cell wide, sits 2 pixels from the right
+ * edge with 2 pixels clear of it. */
+int toolbar_style_chars(const ToolbarLayout *tl, int char_w);
+
 /* the item at the point, or TB_NONE */
 ToolbarItem toolbar_hit(const ToolbarLayout *tl, int x, int y);
 

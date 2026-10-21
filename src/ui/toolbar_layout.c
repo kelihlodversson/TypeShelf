@@ -92,3 +92,13 @@ int toolbar_zoom_at(const ToolbarLayout *tl, int x)
         pos = range;
     return zoom_from_slider(pos, range);
 }
+
+int toolbar_style_chars(const ToolbarLayout *tl, int char_w)
+{
+    int room = tl->rect[TB_STYLE].w - 3 - 2 - char_w - 2;
+    int n = char_w > 0 ? room / char_w : 0;
+
+    if (!tl->present[TB_STYLE] || n < 0)
+        return 0;
+    return n;
+}

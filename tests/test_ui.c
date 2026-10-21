@@ -201,6 +201,26 @@ static void test_toolbar(void)
         }
     }
 
+    /* the style label never crosses the arrow, at any width */
+    {
+        int w, m = MODE_SINGLE;
+
+        for (w = 104; w <= 640; w += 4) {
+            int n;
+
+            toolbar_layout(&tl, w, 8, (WinMode)m);
+            n = toolbar_style_chars(&tl, 8);
+            CHECK(n >= 0 && n <= 10);
+            CHECK(3 + n * 8 + 2 <= tl.rect[TB_STYLE].w - 8 - 2);
+        }
+        toolbar_layout(&tl, 104, 8, MODE_SINGLE);
+        CHECK_INT(toolbar_style_chars(&tl, 8), 3);              /* "Reg", not "Regular" */
+        toolbar_layout(&tl, 400, 8, MODE_SINGLE);
+        CHECK_INT(toolbar_style_chars(&tl, 8), 10);
+        toolbar_layout(&tl, 400, 8, MODE_OVERVIEW);
+        CHECK_INT(toolbar_style_chars(&tl, 8), 0);              /* no pulldown there */
+    }
+
     /* a narrow window gets the small bitmaps; one too narrow loses the slider */
     toolbar_layout(&tl, 200, 8, MODE_OVERVIEW);
     CHECK_INT(tl.icon, 8);
