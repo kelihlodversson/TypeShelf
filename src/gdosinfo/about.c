@@ -23,7 +23,10 @@ int about_format(const AboutFacts *f, char lines[][ABOUT_WIDTH + 1])
     int n = 0;
     char tmp[48];
 
-    put(lines, &n, "Type Shelf");
+    if (f->version[0] != '\0')
+        put(lines, &n, "Type Shelf %s", f->version);
+    else
+        put(lines, &n, "Type Shelf");
     put(lines, &n, "A font viewer for GEM");
     put(lines, &n, " ");
     put(lines, &n, "System: %s", f->os[0] != '\0' ? f->os : "unknown");

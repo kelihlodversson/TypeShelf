@@ -11,6 +11,7 @@
 #define ABOUT_PAD       1       /* blank cells either side; with the outline the dialog fits 320 pixels of 8-pixel cells */
 
 typedef struct {
+    char version[32];           /* Type Shelf's own: "1.2.3", or "dev"; a release has at most 24 characters */
     char os[48];                /* "pTOS 0.0.0a", "TOS 2.06", or "" */
     long vgdos;                 /* vq_vgdos() */
     int have_fsmc;
