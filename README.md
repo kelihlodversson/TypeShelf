@@ -64,7 +64,7 @@ version About shows (`dev` otherwise).
 Download a zip for m68k (`TypeShelf-<version>-m68k.zip`, runs on TOS, EmuTOS and pTOS) or ARM
 (`...-arm.zip`, for pTOS on ARM) from the [releases page](../../releases); keep `TYPESHLF.PRG` and
 `TYPESHLF.RSC` together.  A release is made by starting the *Release* workflow (Actions > Release >
-Run workflow) with a version such as `1.2.3`: it builds both zips with the version in the About
+Run workflow) with a version such as `1.2.3` or `1.2.3-rc.1` (at most 24 characters, so that About shows it whole): it builds both zips with the version in the About
 dialog, tags the commit `v1.2.3` and publishes the release, with notes generated from the pull
 requests merged since the last one (`.github/release.yml` groups them by label: `enhancement`,
 `bug`, `documentation`; `skip-changelog` leaves one out).  A build of your own says `dev`;

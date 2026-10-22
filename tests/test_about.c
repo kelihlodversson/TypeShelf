@@ -29,6 +29,11 @@ void test_about(void)
     strcpy(f.version, "1.2.3");
     n = about_format(&f, lines);
     CHECK_STR(lines[0], "Type Shelf 1.2.3");
+    strcpy(f.version, "1.2.3-rc.1234567890abcd");       /* 24 characters, the longest a release has */
+    n = about_format(&f, lines);
+    CHECK_STR(lines[0], "Type Shelf 1.2.3-rc.1234567890abcd");
+    strcpy(f.version, "1.2.3");
+    n = about_format(&f, lines);
     CHECK_STR(lines[3], "System: pTOS 0.0.0a");
     CHECK_STR(lines[4], "GDOS:   FSMGDOS");
     CHECK_STR(lines[5], "Vector: SpeedoGDOS 4.00, quality -1");
