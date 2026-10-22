@@ -17,6 +17,7 @@ LOGIC_SRC += src/fontdb/split.c
 LOGIC_SRC += src/fontdb/group.c
 LOGIC_SRC += src/gdosinfo/decode.c src/gdosinfo/about.c
 LOGIC_SRC += src/layout/layout.c
+LOGIC_SRC += src/install/install.c
 LOGIC_SRC += src/fontdb/build.c
 LOGIC_SRC += src/ui/rect.c
 LOGIC_SRC += src/ui/command.c
@@ -50,7 +51,7 @@ TEST_SRC  += tests/test_group.c
 TEST_SRC  += tests/test_decode.c tests/test_about.c
 TEST_SRC  += tests/test_layout.c
 TEST_SRC  += tests/test_build.c
-TEST_SRC  += tests/test_ui.c
+TEST_SRC  += tests/test_ui.c tests/test_install.c
 CC_HOST    ?= cc
 HOST_FLAGS ?= $(STD) $(WARN) -Werror -g -Isrc -Itests
 
