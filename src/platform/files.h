@@ -6,7 +6,10 @@
 #ifndef PLATFORM_FILES_H
 #define PLATFORM_FILES_H
 
-/* the size in bytes, or -1 if the file cannot be opened */
+#define FILE_NOT_FOUND  (-33L)      /* GEMDOS errors for a file or folder that is not there */
+#define PATH_NOT_FOUND  (-34L)
+
+/* the size in bytes, or the negative GEMDOS error of the Fopen() or Fseek() */
 long platform_file_size(const char *path);
 
 /* 1 if the file can be opened */

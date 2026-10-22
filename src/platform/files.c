@@ -17,10 +17,10 @@ long platform_file_size(const char *path)
     long size;
 
     if (fd < 0)
-        return -1;
+        return fd;                          /* the GEMDOS error: FILE_NOT_FOUND is not a read error */
     size = Fseek(0L, (short)fd, 2);         /* to the end: the position is the size */
     Fclose((short)fd);
-    return size < 0 ? -1 : size;
+    return size;
 }
 
 int platform_file_exists(const char *path)

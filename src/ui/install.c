@@ -43,8 +43,10 @@ static int read_assign(char drive, char *out, size_t cap, const char **path)
         file[0] = drive;
         strcpy(file + 1, places[i]);
         size = platform_file_size(file);
+        if (size == FILE_NOT_FOUND || size == PATH_NOT_FOUND)
+            continue;                   /* there is none here */
         if (size < 0)
-            continue;
+            return -1;                  /* there is one, and it cannot be read: not a guess at the folder */
         found = 1;
         if (size > ASSIGN_MAX)
             return -1;
