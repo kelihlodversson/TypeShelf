@@ -25,7 +25,10 @@ void test_about(void)
     f.have_ucs2 = 1;
     n = about_format(&f, lines);
     CHECK(n > 8 && n <= ABOUT_MAX_LINES);
-    CHECK_STR(lines[0], "Type Shelf");
+    CHECK_STR(lines[0], "Type Shelf");                  /* no version known */
+    strcpy(f.version, "1.2.3");
+    n = about_format(&f, lines);
+    CHECK_STR(lines[0], "Type Shelf 1.2.3");
     CHECK_STR(lines[3], "System: pTOS 0.0.0a");
     CHECK_STR(lines[4], "GDOS:   FSMGDOS");
     CHECK_STR(lines[5], "Vector: SpeedoGDOS 4.00, quality -1");

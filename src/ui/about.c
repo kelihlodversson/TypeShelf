@@ -6,6 +6,7 @@
 #include "gdosinfo/decode.h"
 #include "platform/platform.h"
 #include "ui/about.h"
+#include "version.h"
 
 #define COOKIE_FSMC 0x46534D43L     /* 'FSMC' */
 #define COOKIE_NVDI 0x4E564449L     /* 'NVDI' */
@@ -19,6 +20,7 @@ void about_collect(AboutFacts *f, short vh, const FontList *fonts, int have_arbp
     int i, j;
 
     memset(f, 0, sizeof *f);
+    snprintf(f->version, sizeof f->version, "%s", typeshelf_version);
     if (platform_get_os(&os) == 0) {
         if (os.name != 0)
             gdos_format_osname(os.name, os.version, f->os, sizeof f->os);

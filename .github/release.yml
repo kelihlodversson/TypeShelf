@@ -1,0 +1,25 @@
+# The categories of the release notes GitHub generates from the merged pull
+# requests (gh release create --generate-notes); a PR is listed under the
+# first category with one of its labels, else under "Other changes"
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+    authors:
+      - dependabot
+  categories:
+    - title: New features
+      labels:
+        - enhancement
+        - feature
+    - title: Fixes
+      labels:
+        - bug
+        - bugfix
+    - title: Documentation
+      labels:
+        - documentation
+        - docs
+    - title: Other changes
+      labels:
+        - "*"

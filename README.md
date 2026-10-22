@@ -24,6 +24,17 @@ card per style.  Back or Esc returns, and the window's slider scrolls.  Install
 Font and the full About dialog are still to come.  The design is in
 [docs/superpowers/specs/2026-10-20-typeshelf-design.md](docs/superpowers/specs/2026-10-20-typeshelf-design.md).
 
+## Releases
+
+Download a zip for m68k (`TypeShelf-<version>-m68k.zip`, runs on TOS, EmuTOS and pTOS) or ARM
+(`...-arm.zip`, for pTOS on ARM) from the [releases page](../../releases); keep `TYPESHLF.PRG` and
+`TYPESHLF.RSC` together.  A release is made by starting the *Release* workflow (Actions > Release >
+Run workflow) with a version such as `1.2.3`: it builds both zips with the version in the About
+dialog, tags the commit `v1.2.3` and publishes the release, with notes generated from the pull
+requests merged since the last one (`.github/release.yml` groups them by label: `enhancement`,
+`bug`, `documentation`; `skip-changelog` leaves one out).  A build of your own says `dev`;
+`make VERSION=1.2.3` sets another.
+
 ## Screenshots
 
 On the left: pTOS (master, with its built-in scalable fonts) under QEMU `virt-arm`, in 32-bit colour, with the system font and four TrueType fonts (Arial with Regular, Italic and Bold).

@@ -9,6 +9,10 @@
 # Needs GNU make, and for m68k the m68k-atari-mintelf- toolchain on PATH
 # (docs/toolchains.md).  On macOS use gmake.
 
+# The version shown in About: "dev" for a build of your own; a release passes
+# make VERSION=1.2.3 (.github/workflows/release.yml)
+VERSION ?= dev
+
 GEMLIB   = third_party/gemlib
 LIBCMINI = third_party/libcmini
 
@@ -31,13 +35,24 @@ GEM_SRC  += src/ui/views.c
 GEM_SRC  += src/ui/menu.c
 GEM_SRC  += src/ui/window.c
 GEM_SRC  += src/ui/app.c src/ui/about.c
+GEM_SRC  += src/version.c
 M68K_PLATFORM_SRC = src/platform/platform.c src/platform/m68k/legacy.c
 GENERIC_PLATFORM_SRC = src/platform/platform.c src/platform/generic/legacy.c
 
 STD      = -std=gnu99
 WARN     = -Wall -Wextra
-INCLUDES = -Isrc -I$(GEMLIB) -I$(LIBCMINI)/include
+INCLUDES = -Isrc -Ibuild -I$(GEMLIB) -I$(LIBCMINI)/include
 
+# build/version_def.h has the version; it keeps its timestamp while the version
+# does not change, so only a new version recompiles
+VERSION_H = build/version_def.h
+
+$(VERSION_H): FORCE
+	@mkdir -p $(dir $@)
+	@printf '#define TYPESHELF_VERSION "%s"\n' '$(VERSION)' > $@.new
+	@cmp -s $@.new $@ && rm $@.new || mv $@.new $@
+
+.DEFAULT_GOAL := all
 .PHONY: all test arm check-x86_64 clean
 all: build/m68k/TYPESHLF.PRG build/m68k/TYPESHLF.RSC
 
@@ -52,9 +67,9 @@ TEST_SRC  += tests/test_layout.c
 TEST_SRC  += tests/test_build.c
 TEST_SRC  += tests/test_ui.c
 CC_HOST    ?= cc
-HOST_FLAGS ?= $(STD) $(WARN) -Werror -g -Isrc -Itests
+HOST_FLAGS ?= $(STD) $(WARN) -Werror -g -Isrc -Ibuild -Itests
 
-build/host/tests: $(LOGIC_SRC) $(TEST_SRC) $(wildcard src/*/*.h tests/*.h)
+build/host/tests: $(LOGIC_SRC) $(TEST_SRC) $(wildcard src/*/*.h tests/*.h) $(VERSION_H)
 	mkdir -p build/host
 	$(CC_HOST) $(HOST_FLAGS) $(LOGIC_SRC) $(TEST_SRC) -o $@
 
@@ -126,7 +141,7 @@ M68K_CFLAGS = $(STD) $(WARN) -O2 -m68000 -fomit-frame-pointer $(INCLUDES)
 M68K_SRC    = $(LOGIC_SRC) $(GEM_SRC) $(M68K_PLATFORM_SRC)
 M68K_OBJ    = $(patsubst src/%.c,build/m68k/%.o,$(M68K_SRC))
 
-build/m68k/%.o: src/%.c $(wildcard src/*/*.h) $(GEMLIB_H)
+build/m68k/%.o: src/%.c $(wildcard src/*/*.h) $(GEMLIB_H) $(VERSION_H)
 	@mkdir -p $(dir $@)
 	$(M68K_CC) $(M68K_CFLAGS) -c $< -o $@
 
@@ -148,7 +163,7 @@ ARM_CRT       = build/arm/lib/minicrt0.o
 
 # gemlib's own include/arm directory has the compiler.h its headers need
 ARM_CFLAGS = $(STD) $(WARN) -Werror -O2 -ffreestanding $(ARM_ABI) \
-    -Isrc -I$(GEMLIB)/include/arm -I$(GEMLIB) -I$(LIBCMINI)/include
+    -Isrc -Ibuild -I$(GEMLIB)/include/arm -I$(GEMLIB) -I$(LIBCMINI)/include
 ARM_SRC    = $(LOGIC_SRC) $(GEM_SRC) $(GENERIC_PLATFORM_SRC)
 ARM_OBJ    = $(patsubst src/%.c,build/arm/%.o,$(ARM_SRC))
 
@@ -167,7 +182,7 @@ $(ARM_LIBCMINI): $(LIBCMINI_REV)
 
 $(ARM_CRT): $(ARM_LIBCMINI)
 
-build/arm/%.o: src/%.c $(wildcard src/*/*.h) $(GEMLIB_H)
+build/arm/%.o: src/%.c $(wildcard src/*/*.h) $(GEMLIB_H) $(VERSION_H)
 	@mkdir -p $(dir $@)
 	$(ARM_CC) $(ARM_CFLAGS) -c $< -o $@
 
@@ -193,7 +208,7 @@ endif
 X86_FLAGS    ?= -mx32
 CHECK_CFLAGS = $(STD) $(WARN) -Werror -O2 -ffreestanding -Isrc/compat $(INCLUDES)
 
-check-x86_64: $(GEMLIB_H)
+check-x86_64: $(GEMLIB_H) $(VERSION_H)
 	for f in $(CHECK_SRC); do \
 	    $(X86_CC) $(X86_FLAGS) $(CHECK_CFLAGS) -c $$f -o /dev/null || exit 1; \
 	done
