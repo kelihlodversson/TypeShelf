@@ -32,12 +32,13 @@ jobs:
           VERSION: ${{ inputs.version }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          case "$VERSION" in
-            [0-9]*.[0-9]*.[0-9]*) ;;
-            *) echo "::error::version '$VERSION' is not like 1.2.3"; exit 1 ;;
-          esac
-          if printf '%s' "$VERSION" | grep -q '[^0-9A-Za-z.-]'; then
-            echo "::error::version '$VERSION' has characters other than letters, digits, . and -"; exit 1
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+            echo "::error::version '$VERSION' is not like 1.2.3 or 1.2.3-rc1"
+            exit 1
+          fi
+          if ! git check-ref-format "refs/tags/v$VERSION"; then
+            echo "::error::version '$VERSION' cannot form a valid Git tag"
+            exit 1
           fi
           if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$VERSION" >/dev/null 2>&1; then
             echo "::error::the tag v$VERSION exists already"; exit 1
