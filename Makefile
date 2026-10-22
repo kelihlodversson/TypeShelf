@@ -2,7 +2,7 @@
 #
 #   make test            host unit tests
 #   make                 build/m68k/TYPESHLF.PRG and TYPESHLF.RSC (keep them together)
-#   make arm             build/arm/TYPESHLF.PRG and TYPESHLF.RSC (links; not yet run on pTOS)
+#   make arm             build/arm/TYPESHLF.PRG and TYPESHLF.RSC (runs on pTOS ARM)
 #   make check-x86_64    compile the sources for x32 (no link)
 #   make clean
 #

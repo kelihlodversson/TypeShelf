@@ -26,7 +26,7 @@ libcmini's configuration also needs Python 3 and kconfiglib:
 
     pip3 install kconfiglib
 
-## ARM (builds and links; not yet run on pTOS)
+## ARM (runs on pTOS ARM)
 
     sudo apt-get install -y gcc-arm-none-eabi       # Ubuntu
     brew install gcc-arm-embedded                   # macOS
