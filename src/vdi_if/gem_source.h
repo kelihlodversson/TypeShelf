@@ -11,6 +11,7 @@
 typedef struct {
     short handle;       /* virtual screen workstation */
     short count;        /* number of faces */
+    short base_count;   /* the faces without the loaded fonts */
     int have_ext;       /* vqt_ext_name() answers (NVDI, SpeedoGDOS) */
     int have_arbpt;     /* vst_arbpt() sizes a vector face continuously */
     int have_ucs2;      /* vst_map_mode(MAP_UNICODE) works: Unicode text (NVDI 4, pTOS) */
@@ -22,6 +23,12 @@ typedef struct {
  * faces through out.  0 on success, -1 if no workstation could be opened.
  */
 int gem_source_open(GemSource *gs, VdiFontSource *out);
+
+/*
+ * Unload and load the GDOS fonts again, so that fonts added since are seen,
+ * and update gs->count.  The caller rebuilds its list from the source.
+ */
+void gem_source_reload(GemSource *gs);
 
 void gem_source_close(GemSource *gs);
 

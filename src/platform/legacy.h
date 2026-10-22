@@ -14,4 +14,7 @@ int legacy_get_cookie(long id, long *value);
  * marker EmuTOS and pTOS carry is there; 0, or -1 if they cannot be read */
 int legacy_get_os(unsigned short *os_version, int *is_etos);
 
+/* the drive the system booted from, 0 for A; -1 if it cannot be read */
+int legacy_get_boot_drive(void);
+
 #endif

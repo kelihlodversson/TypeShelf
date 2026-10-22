@@ -31,9 +31,9 @@ GEM_SRC  += src/ui/draw.c src/ui/popup.c
 GEM_SRC  += src/ui/views.c
 GEM_SRC  += src/ui/menu.c
 GEM_SRC  += src/ui/window.c
-GEM_SRC  += src/ui/app.c src/ui/about.c
-M68K_PLATFORM_SRC = src/platform/platform.c src/platform/m68k/legacy.c
-GENERIC_PLATFORM_SRC = src/platform/platform.c src/platform/generic/legacy.c
+GEM_SRC  += src/ui/app.c src/ui/about.c src/ui/install.c
+M68K_PLATFORM_SRC = src/platform/platform.c src/platform/files.c src/platform/m68k/legacy.c
+GENERIC_PLATFORM_SRC = src/platform/platform.c src/platform/files.c src/platform/generic/legacy.c
 
 STD      = -std=gnu99
 WARN     = -Wall -Wextra

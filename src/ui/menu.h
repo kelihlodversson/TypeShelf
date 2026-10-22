@@ -26,4 +26,7 @@ Command menu_command(int item);
  * single font, and List is greyed out there. */
 void menu_update(OBJECT *tree, const WinState *ws);
 
+/* Install Font... is greyed out when the GDOS has no scalable fonts */
+void menu_set_install_enabled(OBJECT *tree, int enabled);
+
 #endif

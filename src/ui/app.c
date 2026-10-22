@@ -4,7 +4,9 @@
 #include "ui/about.h"
 #include "ui/app.h"
 #include "ui/command.h"
+#include "fontdb/build.h"
 #include "ui/icons.h"
+#include "ui/install.h"
 #include "ui/menu.h"
 #include "ui/popup.h"
 #include "ui/views.h"
@@ -19,6 +21,10 @@ typedef struct {
     int quit;
     int button_down;            /* a press was handled; wait for the release */
     AboutFacts about;
+    GemSource *gs;
+    const VdiFontSource *src;
+    FontList *fonts;            /* rebuilt in place, so env.fonts stays valid */
+    InstallKind install;        /* INSTALL_NONE: Install Font is greyed out */
 } App;
 
 static Window *find_window(App *app, int handle)
@@ -82,6 +88,70 @@ static void close_window(App *app, Window *w)
     refresh_menu(app);
 }
 
+/*
+ * Read the fonts again (the GDOS unloads and loads them) and point the windows
+ * at the same families in the new list; one whose family is gone goes back to
+ * the overview.  Returns how many faces were added, which is negative if
+ * fewer are listed now.
+ */
+static int reload_fonts(App *app)
+{
+    char (*names)[64] = NULL;
+    Window *w;
+    int n = 0, i, before = app->gs->count;
+
+    for (w = app->windows; w != NULL; w = w->next)
+        n++;
+    if (n > 0)
+        names = calloc((size_t)n, sizeof *names);
+    for (w = app->windows, i = 0; w != NULL; w = w->next, i++) {
+        const FontList *l = app->fonts;
+
+        if (names != NULL && w->state.family >= 0 && w->state.family < l->family_count)
+            strncpy(names[i], l->families[w->state.family].name, sizeof names[i] - 1);
+    }
+
+    gem_source_reload(app->gs);
+    fontlist_free(app->fonts);
+    if (fontdb_build(app->src, app->fonts) < 0)
+        form_alert(1, "[3][Type Shelf|Out of memory.][OK]");
+    views_forget();
+
+    for (w = app->windows, i = 0; w != NULL; w = w->next, i++) {
+        const FontFamily *f = names != NULL && names[i][0] != '\0' ?
+                              fontlist_find(app->fonts, names[i]) : NULL;
+
+        free(w->expanded);
+        w->expanded = NULL;
+        w->expanded_n = 0;
+        w->state.selected = -1;
+        w->state.scroll_y = 0;
+        if (f != NULL) {
+            w->state.family = (int)(f - app->fonts->families);
+            if (w->state.style >= f->style_count)
+                w->state.style = 0;
+        } else if (w->state.mode == MODE_SINGLE) {
+            w->state.mode = MODE_OVERVIEW;
+            w->state.view = w->state.overview_view;
+            w->state.family = -1;
+        }
+    }
+    free(names);
+    about_collect(&app->about, app->env.vh, app->fonts, app->gs->have_arbpt, app->gs->have_ucs2);
+    for (w = app->windows; w != NULL; w = w->next)
+        redraw_all(app, w);
+    return app->gs->count - before;
+}
+
+static void install_font(App *app)
+{
+    InstallDone done;
+
+    if (app->install == INSTALL_NONE || !install_ask_and_copy(app->install, &done))
+        return;
+    install_report(&done, reload_fonts(app) > 0);
+}
+
 static void execute(App *app, Command cmd)
 {
     Window *w = front_window(app);
@@ -94,7 +164,7 @@ static void execute(App *app, Command cmd)
         new_window(app);
         break;
     case CMD_INSTALL:
-        form_alert(1, "[1][Install Font|is not built yet.][OK]");
+        install_font(app);
         break;
     case CMD_CLOSE:
         if (w != NULL)
@@ -132,6 +202,9 @@ static void on_message(App *app, const short msg[8])
     case MN_SELECTED:
         execute(app, menu_command(msg[4]));
         menu_tnormal(app->menu, msg[3], 1);
+        break;
+    case FNT_CHANGED:
+        reload_fonts(app);
         break;
     case WM_REDRAW:
         if (w != NULL) {
@@ -274,8 +347,11 @@ static void on_click(App *app, int x, int y, int clicks)
     }
 }
 
-int app_run(short vh, const FontList *fonts, int have_arbpt, int have_ucs2)
+int app_run(GemSource *gs, const VdiFontSource *src, FontList *fonts)
 {
+    short vh = gs->handle;
+    int have_arbpt = gs->have_arbpt;
+    int have_ucs2 = gs->have_ucs2;
     App app;
     short cw, ch, box_w, box_h;
     GRECT desk;
@@ -284,7 +360,11 @@ int app_run(short vh, const FontList *fonts, int have_arbpt, int have_ucs2)
     short msg[8];
 
     memset(&app, 0, sizeof app);
+    app.gs = gs;
+    app.src = src;
+    app.fonts = fonts;
     about_collect(&app.about, vh, fonts, have_arbpt, have_ucs2);
+    app.install = install_kind(&app.about);
     app.env.vh = vh;
     app.env.fonts = fonts;
     app.env.have_arbpt = have_arbpt;
@@ -314,6 +394,7 @@ int app_run(short vh, const FontList *fonts, int have_arbpt, int have_ucs2)
         icons_free();
         return -1;
     }
+    menu_set_install_enabled(app.menu, app.install != INSTALL_NONE);
     graf_mouse(ARROW, NULL);
     menu_bar(app.menu, 1);
     new_window(&app);

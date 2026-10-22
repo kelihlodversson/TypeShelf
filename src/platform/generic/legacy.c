@@ -14,3 +14,8 @@ int legacy_get_os(unsigned short *os_version, int *is_etos)
     (void)is_etos;
     return -1;
 }
+
+int legacy_get_boot_drive(void)
+{
+    return -1;
+}

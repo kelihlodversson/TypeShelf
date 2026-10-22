@@ -163,6 +163,7 @@ int gem_source_open(GemSource *gs, VdiFontSource *out)
      */
     if (vq_gdos() != 0)
         extra = vst_load_fonts(gs->handle, 0);
+    gs->base_count = work_out[10];
     gs->count = (short)(work_out[10] + extra);
     gs->have_ext = probe_ext(gs);
     gs->have_xfnt = probe_xfnt(gs);
@@ -173,6 +174,17 @@ int gem_source_open(GemSource *gs, VdiFontSource *out)
     out->face_get = gem_face_get;
     out->ctx = gs;
     return 0;
+}
+
+void gem_source_reload(GemSource *gs)
+{
+    short extra;
+
+    if (gs->handle == 0 || vq_gdos() == 0)
+        return;
+    vst_unload_fonts(gs->handle, 0);
+    extra = vst_load_fonts(gs->handle, 0);
+    gs->count = (short)(gs->base_count + extra);
 }
 
 void gem_source_close(GemSource *gs)

@@ -30,7 +30,7 @@ int main(void)
     if (faces < 0) {
         form_alert(1, "[3][Type Shelf|Out of memory.][OK]");
     } else {
-        app_run(gs.handle, &list, gs.have_arbpt, gs.have_ucs2);
+        app_run(&gs, &source, &list);
         fontlist_free(&list);
     }
 

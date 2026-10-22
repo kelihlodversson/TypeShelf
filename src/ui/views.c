@@ -314,6 +314,18 @@ static struct {
     short *codes;
     int valid;
 } rep_cache[REP_SLOTS];
+
+void views_forget(void)
+{
+    int i;
+
+    for (i = 0; i < REP_SLOTS; i++) {
+        free(rep_cache[i].codes);
+        rep_cache[i].codes = NULL;
+        rep_cache[i].count = 0;
+        rep_cache[i].valid = 0;
+    }
+}
 static int rep_next_slot;
 
 static void repertoire_of(const UiEnv *env, const Window *w, const FontFamily *f, int style, const short **codes,
