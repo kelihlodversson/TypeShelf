@@ -98,6 +98,7 @@ void about_show(const AboutFacts *f)
     o[0].ob_type = G_BOX;
     o[0].ob_spec.index = 0x00021100L;           /* a thick outline, white fill */
     o[0].ob_state = OS_OUTLINED;
+    o[0].ob_flags = OF_FL3DBAK;                 /* a 3D background where the AES has 3D objects */
     o[0].ob_head = 1;
     o[0].ob_tail = (short)btn;
     o[0].ob_next = -1;
@@ -112,7 +113,7 @@ void about_show(const AboutFacts *f)
         place(s, ABOUT_PAD, 1 + i, ABOUT_WIDTH, 1);
     }
     o[btn].ob_type = G_BUTTON;
-    o[btn].ob_flags = OF_SELECTABLE | OF_DEFAULT | OF_EXIT | OF_LASTOB;
+    o[btn].ob_flags = OF_SELECTABLE | OF_DEFAULT | OF_EXIT | OF_LASTOB | OF_FL3DACT;   /* a 3D activator */
     o[btn].ob_spec.free_string = "OK";
     o[btn].ob_next = 0;
     o[btn].ob_head = o[btn].ob_tail = -1;
