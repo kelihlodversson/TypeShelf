@@ -24,9 +24,12 @@ card per style.  Back or Esc returns, and the window's slider scrolls.
 
 File ▸ Install Font… copies a TrueType or OpenType font (.TTF, .OTF, .TTC) into the
 fonts folder and reloads the list: `\GEMSYS\FONTS` on the boot drive for pTOS's built-in
-GDOS, or the `path=` of `ASSIGN.SYS` for a GDOS from disk (which also takes .SPD).  It is
-greyed out when the GDOS has no scalable fonts.  pTOS looks for fonts when it starts, so
-until it can rescan the folder the new font shows up after a restart; Type Shelf says so.
+GDOS, or the `path=` of `ASSIGN.SYS` for a GDOS from disk (which also takes .SPD).  A
+SpeedoGDOS 4.00 from disk has the same cookie as pTOS's built-in GDOS, so Type Shelf takes a
+GDOS with an `ASSIGN.SYS` on the boot drive for the disk one.  FONTGDOS (bitmap fonts only) does not count.
+It is greyed out when the GDOS has no scalable fonts.  A replaced font is copied beside the old
+one and swapped in, so a failure keeps the old font.  pTOS looks for fonts when it starts unless
+built with `CONF_VDI_FONT_RESCAN`; if the new font is not listed Type Shelf suggests a restart.
 Bitmap fonts are not installed yet.  The design is in
 [docs/superpowers/specs/2026-10-20-typeshelf-design.md](docs/superpowers/specs/2026-10-20-typeshelf-design.md).
 

@@ -325,6 +325,7 @@ void views_forget(void)
         rep_cache[i].count = 0;
         rep_cache[i].valid = 0;
     }
+    cell_cache.valid = 0;       /* the fonts may have other metrics now */
 }
 static int rep_next_slot;
 

@@ -19,6 +19,11 @@ typedef enum {
 #define INSTALL_BUILTIN_DIR "\\GEMSYS\\FONTS"
 #define INSTALL_DISK_DIR    "\\GEMSYS"          /* when ASSIGN.SYS has no path= */
 
+/* A cookie of SpeedoGDOS 4.00 ("_SPD", 0x0400) is also what pTOS's built-in
+ * GDOS has, and nothing tells the two apart but ASSIGN.SYS (a GDOS from disk
+ * reads one; pTOS's has none): INSTALL_BUILTIN is only the first guess, and
+ * the caller makes it INSTALL_DISK when it finds an ASSIGN.SYS.  FONTGDOS
+ * ("_FNT") has no scalable fonts. */
 InstallKind install_kind(const AboutFacts *f);
 
 /* 1 if name (a file name or a path) ends in an extension the GDOS loads by
@@ -29,7 +34,7 @@ int install_extension_ok(InstallKind kind, const char *name);
 const char *install_basename(const char *path);
 
 /* The value of the first "path=" line of ASSIGN.SYS's text (len bytes, not
- * NUL-terminated), spaces and the "drive:" kept, without a trailing '\'.
+ * NUL-terminated), spaces and the "drive:" kept, without a trailing '\' (but a root, "\" or "C:\", stays).
  * 1 and out set if there is one, else 0. */
 int install_parse_assign_path(const char *text, size_t len, char *out, size_t cap);
 

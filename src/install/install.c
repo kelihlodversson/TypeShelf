@@ -9,10 +9,14 @@ static int upper(int c)
 
 InstallKind install_kind(const AboutFacts *f)
 {
-    if (f->have_fsmc && memcmp(f->fsmc_magic, "_SPD", 4) == 0 &&
-        f->fsmc_version == 0x0400 && !f->have_nvdi)
+    int outline = f->have_fsmc && (memcmp(f->fsmc_magic, "_SPD", 4) == 0 ||
+                                   memcmp(f->fsmc_magic, "_FSM", 4) == 0);
+
+    /* pTOS's built-in GDOS looks like SpeedoGDOS 4.00; the caller tells them apart by ASSIGN.SYS */
+    if (outline && memcmp(f->fsmc_magic, "_SPD", 4) == 0 && f->fsmc_version == 0x0400 && !f->have_nvdi)
         return INSTALL_BUILTIN;
-    if (f->have_fsmc || (f->have_nvdi && f->nvdi_bcd >= 0x0300))
+    /* FONTGDOS ('_FNT') has bitmap fonts only: it counts only with an NVDI that has outlines */
+    if (outline || (f->have_nvdi && f->nvdi_bcd >= 0x0300))
         return INSTALL_DISK;
     return INSTALL_NONE;
 }
@@ -77,6 +81,8 @@ int install_parse_assign_path(const char *text, size_t len, char *out, size_t ca
             while (end > p && (text[end - 1] == '\\' || text[end - 1] == '/')) {
                 /* keep the root of a drive: "C:\" stays a path of its own */
                 if (end - p == 3 && text[p + 1] == ':')
+                    break;
+                if (end - p == 1)       /* and the root of the boot drive */
                     break;
                 end--;
             }

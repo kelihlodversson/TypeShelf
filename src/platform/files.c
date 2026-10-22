@@ -95,9 +95,55 @@ int platform_copy_file(const char *src, const char *dst)
     if (Fclose((short)out) < 0 && result == COPY_OK)
         result = COPY_WRITE;
     if (result != COPY_OK)
-        Fdelete(dst);
+        (void)Fdelete(dst);
     free(buf);
     return result;
+}
+
+#define TEMP_NAME   "TSHELF.TMP"
+#define BACKUP_NAME "TSHELF.BAK"
+
+/* dir of dst + '\\' + name, in out (cap bytes); -1 if it does not fit */
+static int sibling(const char *dst, const char *name, char *out, size_t cap)
+{
+    const char *slash = strrchr(dst, '\\');
+    size_t dir = slash != NULL ? (size_t)(slash - dst) + 1 : 0;
+
+    if (dir + strlen(name) + 1 > cap)
+        return -1;
+    memcpy(out, dst, dir);
+    strcpy(out + dir, name);
+    return 0;
+}
+
+int platform_install_file(const char *src, const char *dst)
+{
+    char tmp[160], bak[160];
+    int rc, had_old;
+
+    if (sibling(dst, TEMP_NAME, tmp, sizeof tmp) != 0 || sibling(dst, BACKUP_NAME, bak, sizeof bak) != 0)
+        return COPY_CREATE;
+    rc = platform_copy_file(src, tmp);
+    if (rc != COPY_OK)
+        return rc;
+
+    had_old = platform_file_exists(dst);
+    if (had_old) {
+        (void)Fdelete(bak);                       /* a leftover of an interrupted install */
+        if (Frename(0, dst, bak) != 0) {
+            (void)Fdelete(tmp);
+            return COPY_CREATE;
+        }
+    }
+    if (Frename(0, tmp, dst) != 0) {
+        if (had_old)
+            (void)Frename(0, bak, dst);           /* back as it was */
+        (void)Fdelete(tmp);
+        return COPY_CREATE;
+    }
+    if (had_old)
+        (void)Fdelete(bak);
+    return COPY_OK;
 }
 
 long platform_read_file(const char *path, char *buf, long cap)

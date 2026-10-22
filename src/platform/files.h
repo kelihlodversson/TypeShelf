@@ -21,6 +21,12 @@ enum { COPY_OK = 0, COPY_OPEN = -1, COPY_CREATE = -2, COPY_READ = -3, COPY_WRITE
 /* Copy src over dst in 8 KB pieces.  A copy that fails half way is deleted. */
 int platform_copy_file(const char *src, const char *dst);
 
+/* Put a copy of src at dst without losing what is at dst if anything fails:
+ * copy to TSHELF.TMP in dst's folder, then (moving an old dst aside to
+ * TSHELF.BAK while it happens) rename it into place.  COPY_OK or a COPY_ error;
+ * the old file is back in place after an error. */
+int platform_install_file(const char *src, const char *dst);
+
 /* Read up to cap bytes from the start of a file; the number read, or -1 */
 long platform_read_file(const char *path, char *buf, long cap);
 

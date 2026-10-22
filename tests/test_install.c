@@ -29,6 +29,16 @@ static void test_kind(void)
     memcpy(f.fsmc_magic, "_FSM", 4);
     CHECK_INT(install_kind(&f), INSTALL_DISK);
 
+    f = facts();                                /* FONTGDOS: bitmap fonts only */
+    f.have_fsmc = 1;
+    memcpy(f.fsmc_magic, "_FNT", 4);
+    CHECK_INT(install_kind(&f), INSTALL_NONE);
+    f.have_nvdi = 1;
+    f.nvdi_bcd = 0x0250;
+    CHECK_INT(install_kind(&f), INSTALL_NONE);
+    f.nvdi_bcd = 0x0500;                        /* with an NVDI that has outlines */
+    CHECK_INT(install_kind(&f), INSTALL_DISK);
+
     f = facts();
     f.have_nvdi = 1;
     f.nvdi_bcd = 0x0250;
@@ -76,6 +86,10 @@ static void test_assign(void)
     CHECK_STR(out, "\\GEMSYS");
     CHECK(assign("path=C:\\", out));
     CHECK_STR(out, "C:\\");
+    CHECK(assign("path=\\\n", out));            /* the root of the boot drive */
+    CHECK_STR(out, "\\");
+    CHECK(assign("PATH = /\r\n", out));
+    CHECK_STR(out, "/");
     CHECK(!assign("01 A.FNT\n", out));
     CHECK(!assign("pathology=1\n", out));
     CHECK(!assign("path=\n", out));
@@ -101,6 +115,10 @@ static void test_dest(void)
     CHECK_STR(dir, "E:\\FONTS");
     CHECK_INT(install_dest_dir(INSTALL_DISK, 'E', "C:\\", dir, sizeof dir), 0);
     CHECK_STR(dir, "C:\\");
+    CHECK_INT(install_dest_dir(INSTALL_DISK, 'e', "\\", dir, sizeof dir), 0);    /* path=\ */
+    CHECK_STR(dir, "E:\\");
+    CHECK_INT(install_dest_file(dir, "x.ttf", file, sizeof file), 0);
+    CHECK_STR(file, "E:\\X.TTF");
     CHECK_INT(install_dest_dir(INSTALL_NONE, 'C', NULL, dir, sizeof dir), -1);
     CHECK_INT(install_dest_dir(INSTALL_BUILTIN, 'C', NULL, dir, 8), -1);
 

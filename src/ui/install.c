@@ -23,24 +23,32 @@ static int selected_file(const char *mask, const char *name, char *out, size_t c
     return 0;
 }
 
-/* ASSIGN.SYS's path=, from the boot drive's \GEMSYS or its root; NULL if none */
-static const char *assign_path(char drive, char *out, size_t cap)
+/* ASSIGN.SYS on the boot drive, in \GEMSYS or the root: 1 if there is one;
+ * *path is its path= (in out) or NULL */
+static int read_assign(char drive, char *out, size_t cap, const char **path)
 {
     static const char *const places[] = { ":\\GEMSYS\\ASSIGN.SYS", ":\\ASSIGN.SYS" };
     char file[32];
     char text[2048];
     size_t i;
+    int found = 0;
 
+    *path = NULL;
     for (i = 0; i < sizeof places / sizeof places[0]; i++) {
         long got;
 
         file[0] = drive;
         strcpy(file + 1, places[i]);
         got = platform_read_file(file, text, (long)sizeof text);
-        if (got > 0 && install_parse_assign_path(text, (size_t)got, out, cap))
-            return out;
+        if (got < 0)
+            continue;
+        found = 1;
+        if (got > 0 && install_parse_assign_path(text, (size_t)got, out, cap)) {
+            *path = out;
+            break;
+        }
     }
-    return NULL;
+    return found;
 }
 
 static void alert(int icon, const char *line1, const char *line2, const char *line3)
@@ -80,6 +88,10 @@ int install_ask_and_copy(InstallKind kind, InstallDone *done)
     if (selected_file(sel_path, name, src, sizeof src) != 0)
         return 0;
 
+    /* a disk SpeedoGDOS 4.00 has the cookie of pTOS's built-in GDOS; only it has an ASSIGN.SYS */
+    if (read_assign(boot, assign, sizeof assign, &ap) && kind == INSTALL_BUILTIN)
+        kind = INSTALL_DISK;
+
     if (!install_extension_ok(kind, name)) {
         alert(1, "Type Shelf installs", "TrueType and OpenType",
               kind == INSTALL_DISK ? "(.TTF .OTF .TTC .SPD) fonts." : "(.TTF .OTF .TTC) fonts.");
@@ -91,7 +103,6 @@ int install_ask_and_copy(InstallKind kind, InstallDone *done)
         return 0;
     }
 
-    ap = kind == INSTALL_DISK ? assign_path(boot, assign, sizeof assign) : NULL;
     if (install_dest_dir(kind, boot, ap, done->dir, sizeof done->dir) != 0 ||
         install_dest_file(done->dir, src, dest, sizeof dest) != 0) {
         alert(3, "Cannot work out where", "to install", name);
@@ -125,7 +136,7 @@ int install_ask_and_copy(InstallKind kind, InstallDone *done)
     }
 
     graf_mouse(BUSY_BEE, NULL);
-    rc = platform_make_path(done->dir) == 0 ? platform_copy_file(src, dest) : COPY_CREATE;
+    rc = platform_make_path(done->dir) == 0 ? platform_install_file(src, dest) : COPY_CREATE;
     graf_mouse(ARROW, NULL);
     if (rc != COPY_OK) {
         alert(3, "Install failed:", copy_error(rc), done->dir);
@@ -139,10 +150,13 @@ void install_report(const InstallDone *done, int listed)
     char fit[ALERT_WIDTH + 1];
 
     install_fit(done->dir, ALERT_WIDTH, fit);
-    if (listed)
+    if (listed) {
         alert(1, done->name, "is installed in", fit);
-    else
-        alert(1, done->name, done->replaced ? "was replaced in" : "was copied to", fit);
-    if (!listed)
-        alert(1, "Restart to use it:", "this system lists fonts", "only when it starts.");
+    } else if (done->replaced) {
+        alert(1, done->name, "was replaced in", fit);
+        alert(1, "If it looks unchanged,", "restart: the fonts may", "be read only at start.");
+    } else {
+        alert(1, done->name, "was copied to", fit);
+        alert(1, "If it is not listed,", "restart: the fonts may", "be listed only at start.");
+    }
 }
