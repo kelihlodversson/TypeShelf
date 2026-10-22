@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <mint/osbind.h>
 #include <gem.h>
@@ -23,30 +24,44 @@ static int selected_file(const char *mask, const char *name, char *out, size_t c
     return 0;
 }
 
-/* ASSIGN.SYS on the boot drive, in \GEMSYS or the root: 1 if there is one;
- * *path is its path= (in out) or NULL */
+#define ASSIGN_MAX  65536L      /* a longer ASSIGN.SYS is not read */
+
+/* ASSIGN.SYS on the boot drive, in \GEMSYS or the root: 1 if there is one,
+ * 0 if not, -1 if it cannot be read whole; *path is its path= (in out) or NULL */
 static int read_assign(char drive, char *out, size_t cap, const char **path)
 {
     static const char *const places[] = { ":\\GEMSYS\\ASSIGN.SYS", ":\\ASSIGN.SYS" };
     char file[32];
-    char text[2048];
+    char *text;
     size_t i;
     int found = 0;
 
     *path = NULL;
     for (i = 0; i < sizeof places / sizeof places[0]; i++) {
-        long got;
+        long size, got;
 
         file[0] = drive;
         strcpy(file + 1, places[i]);
-        got = platform_read_file(file, text, (long)sizeof text);
-        if (got < 0)
+        size = platform_file_size(file);
+        if (size < 0)
             continue;
         found = 1;
+        if (size > ASSIGN_MAX)
+            return -1;
+        text = malloc((size_t)size + 1);
+        if (text == NULL)
+            return -1;
+        got = platform_read_file(file, text, size);
+        if (got != size) {              /* the whole file or nothing: a cut-off path= is a wrong folder */
+            free(text);
+            return -1;
+        }
         if (got > 0 && install_parse_assign_path(text, (size_t)got, out, cap)) {
             *path = out;
+            free(text);
             break;
         }
+        free(text);
     }
     return found;
 }
@@ -74,6 +89,7 @@ int install_ask_and_copy(InstallKind kind, InstallDone *done)
     char name[16];
     char src[128], dest[160], assign[128], fit[ALERT_WIDTH + 1], line[48];
     const char *ap;
+    int assign_found;
     char boot = platform_boot_drive();
     short button = 0;
     long size;
@@ -89,7 +105,12 @@ int install_ask_and_copy(InstallKind kind, InstallDone *done)
         return 0;
 
     /* a disk SpeedoGDOS 4.00 has the cookie of pTOS's built-in GDOS; only it has an ASSIGN.SYS */
-    if (read_assign(boot, assign, sizeof assign, &ap) && kind == INSTALL_BUILTIN)
+    assign_found = read_assign(boot, assign, sizeof assign, &ap);
+    if (assign_found < 0) {
+        alert(3, "Cannot read ASSIGN.SYS", "to find the fonts folder.", "");
+        return 0;
+    }
+    if (assign_found && kind == INSTALL_BUILTIN)
         kind = INSTALL_DISK;
 
     if (!install_extension_ok(kind, name)) {

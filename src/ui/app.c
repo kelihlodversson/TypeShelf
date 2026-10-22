@@ -120,11 +120,11 @@ static int reload_fonts(App *app)
         }
     }
 
+    views_forget();                     /* its arrays are memory the reload and the rebuild may need */
     gem_source_reload(app->gs);
     fontlist_free(app->fonts);
     if (fontdb_build(app->src, app->fonts) < 0)
         form_alert(1, "[3][Type Shelf|Out of memory.][OK]");
-    views_forget();
 
     for (w = app->windows, i = 0; w != NULL; w = w->next, i++) {
         const FontFamily *f = names != NULL && names[i][0] != '\0' ?

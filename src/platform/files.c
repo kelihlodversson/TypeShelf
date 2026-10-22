@@ -33,9 +33,12 @@ int platform_file_exists(const char *path)
     return 1;
 }
 
+/* Fsfirst() leaves out hidden and system folders: ask for the attributes */
 static int dir_exists(const char *dir)
 {
-    return Fsfirst(dir, FA_DIR) == 0;
+    long attr = Fattrib(dir, 0, 0);
+
+    return attr >= 0 && (attr & FA_DIR) != 0;
 }
 
 int platform_make_path(const char *dir)
