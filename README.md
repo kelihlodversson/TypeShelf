@@ -20,8 +20,14 @@ each family) and List (a tree of families that expand to their styles).  Click
 or use the arrow keys to select, double-click or Return to open a family: its
 Specimen shows a preview at the zoom size and the font's characters, with a
 style pulldown (or Left and Right) to pick the style, and its Samples show a
-card per style.  Back or Esc returns, and the window's slider scrolls.  Install
-Font and the full About dialog are still to come.  The design is in
+card per style.  Back or Esc returns, and the window's slider scrolls.
+
+File ▸ Install Font… copies a TrueType or OpenType font (.TTF, .OTF, .TTC) into the
+fonts folder and reloads the list: `\GEMSYS\FONTS` on the boot drive for pTOS's built-in
+GDOS, or the `path=` of `ASSIGN.SYS` for a GDOS from disk (which also takes .SPD).  It is
+greyed out when the GDOS has no scalable fonts.  pTOS looks for fonts when it starts, so
+until it can rescan the folder the new font shows up after a restart; Type Shelf says so.
+Bitmap fonts are not installed yet.  The design is in
 [docs/superpowers/specs/2026-10-20-typeshelf-design.md](docs/superpowers/specs/2026-10-20-typeshelf-design.md).
 
 ## Screenshots
