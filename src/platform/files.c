@@ -1,6 +1,7 @@
 /*
  * files.c - see files.h
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <mint/osbind.h>
@@ -100,20 +101,28 @@ int platform_copy_file(const char *src, const char *dst)
     return result;
 }
 
-#define TEMP_NAME   "TSHELF.TMP"
-#define BACKUP_NAME "TSHELF.BAK"
-
-/* dir of dst + '\\' + name, in out (cap bytes); -1 if it does not fit */
-static int sibling(const char *dst, const char *name, char *out, size_t cap)
+/*
+ * A scratch name in dst's folder that nothing has: "TSnnn.ext".  Names are
+ * never reused, so another install's temporary file or an interrupted
+ * install's backup (which may be the only copy of a font) is left alone.
+ * Nothing else runs between this check and the creation, as the AES
+ * multitasks cooperatively and GEMDOS calls do not yield.
+ */
+static int scratch_name(const char *dst, const char *ext, char *out, size_t cap)
 {
     const char *slash = strrchr(dst, '\\');
     size_t dir = slash != NULL ? (size_t)(slash - dst) + 1 : 0;
+    int n;
 
-    if (dir + strlen(name) + 1 > cap)
+    if (dir + 10 > cap)
         return -1;
     memcpy(out, dst, dir);
-    strcpy(out + dir, name);
-    return 0;
+    for (n = 0; n < 1000; n++) {
+        sprintf(out + dir, "TS%03d.%s", n, ext);
+        if (!platform_file_exists(out) && Fsfirst(out, 0x16) != 0)
+            return 0;
+    }
+    return -1;
 }
 
 int platform_install_file(const char *src, const char *dst)
@@ -121,7 +130,7 @@ int platform_install_file(const char *src, const char *dst)
     char tmp[160], bak[160];
     int rc, had_old;
 
-    if (sibling(dst, TEMP_NAME, tmp, sizeof tmp) != 0 || sibling(dst, BACKUP_NAME, bak, sizeof bak) != 0)
+    if (scratch_name(dst, "TMP", tmp, sizeof tmp) != 0)
         return COPY_CREATE;
     rc = platform_copy_file(src, tmp);
     if (rc != COPY_OK)
@@ -129,15 +138,14 @@ int platform_install_file(const char *src, const char *dst)
 
     had_old = platform_file_exists(dst);
     if (had_old) {
-        (void)Fdelete(bak);                       /* a leftover of an interrupted install */
-        if (Frename(0, dst, bak) != 0) {
+        if (scratch_name(dst, "BAK", bak, sizeof bak) != 0 || Frename(0, dst, bak) != 0) {
             (void)Fdelete(tmp);
             return COPY_CREATE;
         }
     }
     if (Frename(0, tmp, dst) != 0) {
         if (had_old)
-            (void)Frename(0, bak, dst);           /* back as it was */
+            (void)Frename(0, bak, dst);     /* back as it was */
         (void)Fdelete(tmp);
         return COPY_CREATE;
     }

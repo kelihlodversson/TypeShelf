@@ -72,7 +72,7 @@ static const char *copy_error(int code)
 int install_ask_and_copy(InstallKind kind, InstallDone *done)
 {
     char name[16];
-    char src[128], dest[160], assign[64], fit[ALERT_WIDTH + 1], line[48];
+    char src[128], dest[160], assign[128], fit[ALERT_WIDTH + 1], line[48];
     const char *ap;
     char boot = platform_boot_drive();
     short button = 0;

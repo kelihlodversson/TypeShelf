@@ -97,18 +97,27 @@ static void close_window(App *app, Window *w)
 static int reload_fonts(App *app)
 {
     char (*names)[64] = NULL;
+    char (*styles)[64] = NULL;
     Window *w;
     int n = 0, i, before = app->gs->count;
 
     for (w = app->windows; w != NULL; w = w->next)
         n++;
-    if (n > 0)
+    if (n > 0) {
         names = calloc((size_t)n, sizeof *names);
+        styles = calloc((size_t)n, sizeof *styles);
+    }
     for (w = app->windows, i = 0; w != NULL; w = w->next, i++) {
         const FontList *l = app->fonts;
 
-        if (names != NULL && w->state.family >= 0 && w->state.family < l->family_count)
-            strncpy(names[i], l->families[w->state.family].name, sizeof names[i] - 1);
+        if (names != NULL && styles != NULL && w->state.family >= 0 && w->state.family < l->family_count) {
+            const FontFamily *f = &l->families[w->state.family];
+
+            strncpy(names[i], f->name, sizeof names[i] - 1);
+            /* a style is found again by its name: the list is sorted by weight, so its index can move */
+            if (w->state.style >= 0 && w->state.style < f->style_count && f->styles[w->state.style].style != NULL)
+                strncpy(styles[i], f->styles[w->state.style].style, sizeof styles[i] - 1);
+        }
     }
 
     gem_source_reload(app->gs);
@@ -128,8 +137,19 @@ static int reload_fonts(App *app)
         w->state.scroll_y = 0;
         if (f != NULL) {
             w->state.family = (int)(f - app->fonts->families);
-            if (w->state.style >= f->style_count)
-                w->state.style = 0;
+            {
+                int s, found = 0;
+
+                for (s = 0; styles != NULL && styles[i][0] != '\0' && s < f->style_count; s++) {
+                    if (f->styles[s].style != NULL && strcmp(f->styles[s].style, styles[i]) == 0) {
+                        w->state.style = s;
+                        found = 1;
+                        break;
+                    }
+                }
+                if (!found)
+                    w->state.style = 0;
+            }
         } else if (w->state.mode == MODE_SINGLE) {
             w->state.mode = MODE_OVERVIEW;
             w->state.view = w->state.overview_view;
@@ -137,6 +157,8 @@ static int reload_fonts(App *app)
         }
     }
     free(names);
+    free(styles);
+    app->env.have_arbpt = app->gs->have_arbpt;
     about_collect(&app->about, app->env.vh, app->fonts, app->gs->have_arbpt, app->gs->have_ucs2);
     for (w = app->windows; w != NULL; w = w->next)
         redraw_all(app, w);

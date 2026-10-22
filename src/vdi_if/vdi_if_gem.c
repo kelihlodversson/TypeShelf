@@ -185,6 +185,8 @@ void gem_source_reload(GemSource *gs)
     vst_unload_fonts(gs->handle, 0);
     extra = vst_load_fonts(gs->handle, 0);
     gs->count = (short)(gs->base_count + extra);
+    /* a GDOS that began with bitmap fonts only can answer vst_arbpt once it has a scalable one */
+    gs->have_arbpt = probe_arbpt(gs);
 }
 
 void gem_source_close(GemSource *gs)

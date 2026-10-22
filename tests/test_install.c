@@ -29,6 +29,11 @@ static void test_kind(void)
     memcpy(f.fsmc_magic, "_FSM", 4);
     CHECK_INT(install_kind(&f), INSTALL_DISK);
 
+    f = facts();                                /* ttf-gdos, without NVDI */
+    f.have_fsmc = 1;
+    memcpy(f.fsmc_magic, "TTFG", 4);
+    CHECK_INT(install_kind(&f), INSTALL_DISK);
+
     f = facts();                                /* FONTGDOS: bitmap fonts only */
     f.have_fsmc = 1;
     memcpy(f.fsmc_magic, "_FNT", 4);

@@ -22,8 +22,10 @@ enum { COPY_OK = 0, COPY_OPEN = -1, COPY_CREATE = -2, COPY_READ = -3, COPY_WRITE
 int platform_copy_file(const char *src, const char *dst);
 
 /* Put a copy of src at dst without losing what is at dst if anything fails:
- * copy to TSHELF.TMP in dst's folder, then (moving an old dst aside to
- * TSHELF.BAK while it happens) rename it into place.  COPY_OK or a COPY_ error;
+ * copy to a TSnnn.TMP of its own in dst's folder, then (moving an old dst
+ * aside to a TSnnn.BAK of its own while it happens) rename it into place;
+ * scratch names already in use, by another install or an interrupted one, are
+ * not touched.  COPY_OK or a COPY_ error;
  * the old file is back in place after an error. */
 int platform_install_file(const char *src, const char *dst);
 

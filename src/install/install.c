@@ -10,7 +10,8 @@ static int upper(int c)
 InstallKind install_kind(const AboutFacts *f)
 {
     int outline = f->have_fsmc && (memcmp(f->fsmc_magic, "_SPD", 4) == 0 ||
-                                   memcmp(f->fsmc_magic, "_FSM", 4) == 0);
+                                   memcmp(f->fsmc_magic, "_FSM", 4) == 0 ||
+                                   memcmp(f->fsmc_magic, "TTFG", 4) == 0);
 
     /* pTOS's built-in GDOS looks like SpeedoGDOS 4.00; the caller tells them apart by ASSIGN.SYS */
     if (outline && memcmp(f->fsmc_magic, "_SPD", 4) == 0 && f->fsmc_version == 0x0400 && !f->have_nvdi)
