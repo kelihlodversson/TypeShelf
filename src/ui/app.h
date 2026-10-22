@@ -6,12 +6,14 @@
 
 #include <gem.h>
 #include "fontdb/group.h"
+#include "vdi_if/gem_source.h"
 
 /*
- * Run Type Shelf until Quit.  vh is the screen workstation, fonts the font
- * list.  Returns
- * 0, or -1 if the menu or the first window could not be created.
+ * Run Type Shelf until Quit.  gs is the open font source and src what reads
+ * its faces; fonts is the list built from it, which the app rebuilds in place
+ * when fonts are installed.  Returns 0, or -1 if the menu or the first window
+ * could not be created.
  */
-int app_run(short vh, const FontList *fonts, int have_arbpt, int have_ucs2);
+int app_run(GemSource *gs, const VdiFontSource *src, FontList *fonts);
 
 #endif

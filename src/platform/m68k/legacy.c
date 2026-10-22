@@ -6,6 +6,7 @@
 #include "platform/legacy.h"
 
 #define P_COOKIES   0x5A0L          /* system variable: the cookie jar */
+#define BOOTDEV     0x446L          /* system variable: the boot drive, a word */
 #define SYSBASE     0x4F2L          /* system variable: the OS header */
 
 int legacy_get_cookie(long id, long *value)
@@ -41,4 +42,13 @@ int legacy_get_os(unsigned short *os_version, int *is_etos)
 
     SuperToUser(ssp);
     return 0;
+}
+
+int legacy_get_boot_drive(void)
+{
+    long ssp = Super(0L);
+    int drive = *(const short *)BOOTDEV;
+
+    SuperToUser(ssp);
+    return drive;
 }

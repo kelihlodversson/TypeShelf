@@ -189,3 +189,11 @@ void menu_update(OBJECT *tree, const WinState *ws)
     else
         tree[M_VIEW3].ob_state &= (unsigned short)~OS_DISABLED;
 }
+
+void menu_set_install_enabled(OBJECT *tree, int enabled)
+{
+    if (enabled)
+        tree[M_INSTALL].ob_state &= (unsigned short)~OS_DISABLED;
+    else
+        tree[M_INSTALL].ob_state |= OS_DISABLED;
+}

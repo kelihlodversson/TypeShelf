@@ -1,0 +1,41 @@
+/*
+ * files.h - the few GEMDOS file calls Install Font needs
+ *
+ * Paths are GEMDOS paths ("C:\GEMSYS\FONTS\A.TTF").  Not built on the host.
+ */
+#ifndef PLATFORM_FILES_H
+#define PLATFORM_FILES_H
+
+#define FILE_NOT_FOUND  (-33L)      /* GEMDOS errors for a file or folder that is not there */
+#define PATH_NOT_FOUND  (-34L)
+
+/* the size in bytes, or the negative GEMDOS error of the Fopen() or Fseek() */
+long platform_file_size(const char *path);
+
+/* 1 if the file can be opened */
+int platform_file_exists(const char *path);
+
+/* Create the folder and any missing folders above it ("C:\A\B" makes C:\A,
+ * then C:\A\B).  0 if it is there afterwards, else -1. */
+int platform_make_path(const char *dir);
+
+enum { COPY_OK = 0, COPY_OPEN = -1, COPY_CREATE = -2, COPY_READ = -3, COPY_WRITE = -4 };
+
+/* Copy src over dst in 8 KB pieces.  A copy that fails half way is deleted. */
+int platform_copy_file(const char *src, const char *dst);
+
+/* Put a copy of src at dst without losing what is at dst if anything fails:
+ * copy to a TSnnn.TMP of its own in dst's folder, then (moving an old dst
+ * aside to a TSnnn.BAK of its own while it happens) rename it into place;
+ * scratch names already in use, by another install or an interrupted one, are
+ * not touched.  COPY_OK or a COPY_ error;
+ * the old file is back in place after an error. */
+int platform_install_file(const char *src, const char *dst);
+
+/* Read up to cap bytes from the start of a file; the number read, or -1 */
+long platform_read_file(const char *path, char *buf, long cap);
+
+/* the drive the system booted from, 'A'..'Z'; 'C' if that cannot be told */
+char platform_boot_drive(void);
+
+#endif

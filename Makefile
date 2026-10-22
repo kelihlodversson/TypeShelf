@@ -17,6 +17,7 @@ LOGIC_SRC += src/fontdb/split.c
 LOGIC_SRC += src/fontdb/group.c
 LOGIC_SRC += src/gdosinfo/decode.c src/gdosinfo/about.c
 LOGIC_SRC += src/layout/layout.c
+LOGIC_SRC += src/install/install.c
 LOGIC_SRC += src/fontdb/build.c
 LOGIC_SRC += src/ui/rect.c
 LOGIC_SRC += src/ui/command.c
@@ -30,9 +31,9 @@ GEM_SRC  += src/ui/draw.c src/ui/popup.c
 GEM_SRC  += src/ui/views.c
 GEM_SRC  += src/ui/menu.c
 GEM_SRC  += src/ui/window.c
-GEM_SRC  += src/ui/app.c src/ui/about.c
-M68K_PLATFORM_SRC = src/platform/platform.c src/platform/m68k/legacy.c
-GENERIC_PLATFORM_SRC = src/platform/platform.c src/platform/generic/legacy.c
+GEM_SRC  += src/ui/app.c src/ui/about.c src/ui/install.c
+M68K_PLATFORM_SRC = src/platform/platform.c src/platform/files.c src/platform/m68k/legacy.c
+GENERIC_PLATFORM_SRC = src/platform/platform.c src/platform/files.c src/platform/generic/legacy.c
 
 STD      = -std=gnu99
 WARN     = -Wall -Wextra
@@ -50,7 +51,7 @@ TEST_SRC  += tests/test_group.c
 TEST_SRC  += tests/test_decode.c tests/test_about.c
 TEST_SRC  += tests/test_layout.c
 TEST_SRC  += tests/test_build.c
-TEST_SRC  += tests/test_ui.c
+TEST_SRC  += tests/test_ui.c tests/test_install.c
 CC_HOST    ?= cc
 HOST_FLAGS ?= $(STD) $(WARN) -Werror -g -Isrc -Itests
 
