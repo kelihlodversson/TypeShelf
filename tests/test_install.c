@@ -99,9 +99,26 @@ static void test_assign(void)
     CHECK(!assign("pathology=1\n", out));
     CHECK(!assign("path=\n", out));
     CHECK(!assign("", out));
-    CHECK(install_parse_assign_path("path=C:\\LONG", 12, out, 5) == 0);     /* does not fit */
+    CHECK_INT(install_parse_assign_path("path=C:\\LONG", 12, out, 5), -1);  /* does not fit */
     CHECK(install_parse_assign_path("path=C:\\X junk", 10, out, 64) == 1);  /* len bounds the text */
     CHECK_STR(out, "C:\\X");
+}
+
+static void test_assign_capacity(void)
+{
+    char text[160], out[128];
+
+    strcpy(text, "path=C:\\");
+    memset(text + 8, 'A', 125);
+    strcpy(text + 133, "\npath=C:\\GEMSYS\n");
+    strcpy(out, "unchanged");
+    CHECK_INT(install_parse_assign_path(text, strlen(text), out, sizeof out), -1);
+    CHECK_STR(out, "unchanged");
+
+    text[132] = '\0';                         /* 127 characters plus the terminator fit */
+    CHECK_INT(install_parse_assign_path(text, strlen(text), out, sizeof out), 1);
+    CHECK_STR(out, text + 5);
+    CHECK_INT(install_parse_assign_path(text, strlen(text), out, 0), -1);
 }
 
 static void test_dest(void)
@@ -145,6 +162,9 @@ static void test_same_and_fit(void)
 
     install_fit("C:\\GEMSYS\\FONTS", 30, s);
     CHECK_STR(s, "C:\\GEMSYS\\FONTS");
+    install_fit("C:\\GEMSYS\\LONGDIR1\\LONGDIR2\\LONGDIR3\\FONTS", 30, s);
+    CHECK_STR(s, "...IR1\\LONGDIR2\\LONGDIR3\\FONTS");
+    CHECK_INT(strlen(s), 30);
     install_fit("C:\\GEMSYS\\FONTS", 10, s);
     CHECK_STR(s, "...S\\FONTS");
     CHECK_INT(strlen(s), 10);
@@ -158,6 +178,7 @@ void test_install(void)
     test_extension();
     test_basename();
     test_assign();
+    test_assign_capacity();
     test_dest();
     test_same_and_fit();
 }

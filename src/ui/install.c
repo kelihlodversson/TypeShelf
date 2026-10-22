@@ -27,7 +27,8 @@ static int selected_file(const char *mask, const char *name, char *out, size_t c
 #define ASSIGN_MAX  65536L      /* a longer ASSIGN.SYS is not read */
 
 /* ASSIGN.SYS on the boot drive, in \GEMSYS or the root: 1 if there is one,
- * 0 if not, -1 if it cannot be read whole; *path is its path= (in out) or NULL */
+ * 0 if not, -1 if it cannot be read whole or its path= is too long;
+ * *path is its path= (in out) or NULL */
 static int read_assign(char drive, char *out, size_t cap, const char **path)
 {
     static const char *const places[] = { ":\\GEMSYS\\ASSIGN.SYS", ":\\ASSIGN.SYS" };
@@ -39,6 +40,7 @@ static int read_assign(char drive, char *out, size_t cap, const char **path)
     *path = NULL;
     for (i = 0; i < sizeof places / sizeof places[0]; i++) {
         long size, got;
+        int parsed;
 
         file[0] = drive;
         strcpy(file + 1, places[i]);
@@ -58,12 +60,14 @@ static int read_assign(char drive, char *out, size_t cap, const char **path)
             free(text);
             return -1;
         }
-        if (got > 0 && install_parse_assign_path(text, (size_t)got, out, cap)) {
+        parsed = install_parse_assign_path(text, (size_t)got, out, cap);
+        free(text);
+        if (parsed < 0)
+            return -1;
+        if (parsed > 0) {
             *path = out;
-            free(text);
             break;
         }
-        free(text);
     }
     return found;
 }
@@ -162,7 +166,7 @@ int install_ask_and_copy(InstallKind kind, InstallDone *done)
     rc = platform_make_path(done->dir) == 0 ? platform_install_file(src, dest) : COPY_CREATE;
     graf_mouse(ARROW, NULL);
     if (rc != COPY_OK) {
-        alert(3, "Install failed:", copy_error(rc), done->dir);
+        alert(3, "Install failed:", copy_error(rc), fit);
         return 0;
     }
     return 1;

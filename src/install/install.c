@@ -88,8 +88,10 @@ int install_parse_assign_path(const char *text, size_t len, char *out, size_t ca
                 end--;
             }
             n = end - p;
-            if (n == 0 || n >= cap)
+            if (n == 0)
                 return 0;
+            if (n >= cap)
+                return -1;
             memcpy(out, text + p, n);
             out[n] = '\0';
             return 1;

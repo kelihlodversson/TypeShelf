@@ -35,7 +35,7 @@ const char *install_basename(const char *path);
 
 /* The value of the first "path=" line of ASSIGN.SYS's text (len bytes, not
  * NUL-terminated), spaces and the "drive:" kept, without a trailing '\' (but a root, "\" or "C:\", stays).
- * 1 and out set if there is one, else 0. */
+ * 1 and out set if there is one, 0 if absent or empty, -1 if too long. */
 int install_parse_assign_path(const char *text, size_t len, char *out, size_t cap);
 
 /* The folder to install into, "X:\GEMSYS\FONTS" with no trailing '\'.
