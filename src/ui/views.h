@@ -24,4 +24,8 @@ int view_click(const UiEnv *env, Window *w, int x, int y, int clicks);
 /* An arrow key.  1 if the window needs redrawing. */
 int view_navigate(const UiEnv *env, Window *w, Command cmd);
 
+/* Forget the cached character sets: the font list was rebuilt, so the family
+ * and style indexes they were keyed by mean something else. */
+void views_forget(void);
+
 #endif
