@@ -39,6 +39,7 @@ GEM_SRC  += src/ui/app.c src/ui/about.c src/ui/install.c
 GEM_SRC  += src/version.c
 M68K_PLATFORM_SRC = src/platform/platform.c src/platform/files.c src/platform/m68k/legacy.c
 GENERIC_PLATFORM_SRC = src/platform/platform.c src/platform/files.c src/platform/generic/legacy.c
+X86_PLATFORM_SRC = src/platform/platform.c src/platform/files.c src/platform/x86_64/legacy.c src/platform/x86_64/platform.c
 
 STD      = -std=gnu99
 WARN     = -Wall -Wextra
@@ -213,6 +214,46 @@ check-x86_64: $(GEMLIB_H) $(VERSION_H)
 	for f in $(CHECK_SRC); do \
 	    $(X86_CC) $(X86_FLAGS) $(CHECK_CFLAGS) -c $$f -o /dev/null || exit 1; \
 	done
+
+# ---- x86_64 ILP32 build support ----
+X86_64_PREFIX ?= x86_64-elf-
+X86_64_CC      = $(X86_64_PREFIX)gcc
+X86_64_CFLAGS  = -mx32 -ffreestanding -O2 -Wall -Wextra -Isrc -Ibuild -I$(GEMLIB) -I$(LIBCMINI)/include
+
+# Build gemlib for x86_64 ILP32
+GEMLIB_X86_A = build/x86_64/lib/libgem.a
+
+$(GEMLIB_X86_A):
+	@mkdir -p $(dir $@)
+	$(MAKE) -C $(GEMLIB) ARCH=x86_64 .libx86_64/libgem.a
+	cp $(GEMLIB)/.libx86_64/libgem.a $(dir $@)
+
+# Build libcmini for x86_64 ILP32
+LIBCMINI_X86_A = build/x86_64/lib/libcmini.a
+LIBCMINI_X86_CRT = build/x86_64/lib/crt0.o
+
+$(LIBCMINI_X86_A):
+	@mkdir -p build/x86_64/libcmini $(dir $@)
+	$(LIBCMINI_COPY) build/x86_64/libcmini/
+	$(MAKE) -C build/x86_64/libcmini x86_64_defconfig
+	$(MAKE) -C build/x86_64/libcmini ONLY_X86_64=y dirs libs startups
+	cp build/x86_64/libcmini/build/libcmini.a build/x86_64/libcmini/build/objs/crt0.o $(dir $@)
+
+$(LIBCMINI_X86_CRT): $(LIBCMINI_X86_A)
+
+# x86_64 ILP32 build
+X86_64_SRC    = $(LOGIC_SRC) $(GEM_SRC) $(X86_PLATFORM_SRC)
+X86_64_OBJ    = $(patsubst src/%.c,build/x86_64/%.o,$(X86_64_SRC))
+
+build/x86_64/%.o: src/%.c $(wildcard src/*/*.h) $(GEMLIB_H) $(VERSION_H)
+	@mkdir -p $(dir $@)
+	$(X86_64_CC) $(X86_64_CFLAGS) -c $< -o $@
+
+build/x86_64/TYPESHLF.PRG: $(X86_64_OBJ) $(GEMLIB_X86_A) $(LIBCMINI_X86_A) $(LIBCMINI_X86_CRT)
+	$(X86_64_CC) -mx32 -nostdlib $(LIBCMINI_X86_CRT) $(X86_64_OBJ) \
+	    -Lbuild/x86_64/lib -lgem -lgcc -lcmini -o $@
+
+x86_64: build/x86_64/TYPESHLF.PRG build/x86_64/TYPESHLF.RSC
 
 clean:
 	rm -rf build
