@@ -16,7 +16,7 @@
 /* Typed syscall for x32 userland */
 static __inline__ long ssystem_call(WORD mode, long arg1, long arg2)
 {
-    register unsigned long long rax __asm__("rax") = (1ULL << 32) | 0x154;
+    register unsigned long long rax __asm__("rax") = 0x100000154ULL;
     register long long rdi __asm__("rdi") = (long long)(unsigned short)mode;
     register long long rsi __asm__("rsi") = arg1;
     register long long rdx __asm__("rdx") = arg2;
