@@ -61,16 +61,54 @@ jobs:
             build/arm/TYPESHLF.PRG
             build/arm/TYPESHLF.RSC
 
-  check-x86_64:
-    name: Compile for x32
-    runs-on: ubuntu-latest
+  x32:
+    name: Build for pTOS x32
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install the x32 toolchain
+      - uses: actions/checkout@v4
+        with:
+          repository: kelihlodversson/pTOS
+          ref: 7a17e6328d7f37b75592ee14cb29a0804480342c
+          path: build/ptos
+          submodules: recursive
+      - name: Install build dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y gcc gcc-multilib libc6-dev-x32
-      - name: Compile
-        run: make check-x86_64
+          sudo apt-get install -y gcc binutils rsync python3-venv
+          python3 -m venv build/venv
+          build/venv/bin/pip install kconfiglib
+      - name: Build the pTOS shared runtime
+        working-directory: build/ptos
+        run: |
+          export PATH="$GITHUB_WORKSPACE/build/venv/bin:$PATH"
+          make pc-x86_64-desktop-tests-builtin-cli_defconfig
+          CONFIG_= python3 - <<'PYCONFIG'
+          import kconfiglib
+          config = kconfiglib.Kconfig()
+          config.load_config()
+          config.syms['CONF_WITH_ELF_SHARED'].set_value(2)
+          config.syms['CONF_WITH_LIBAES'].set_value(2)
+          config.write_config()
+          PYCONFIG
+          make CROSS_COMPILE= -j4
+      - name: Build TypeShelf
+        run: |
+          export PATH="$GITHUB_WORKSPACE/build/venv/bin:$PATH"
+          make -j4 x32 PTOS=build/ptos
+      - name: Check the executable and shared library dependencies
+        run: |
+          readelf -h build/x32/TYPESHLF.PRG | grep 'ELF32'
+          readelf -h build/x32/TYPESHLF.PRG | grep 'Advanced Micro Devices X86-64'
+          readelf -l build/x32/TYPESHLF.PRG | grep '/GEMSYS/LIB/X32/LD.SO'
+          readelf -d build/x32/TYPESHLF.PRG | grep 'Shared library: \[libaes.so\]'
+          readelf -d build/x32/TYPESHLF.PRG | grep 'Shared library: \[libptos.so\]'
+          python3 tools/mkrsc.py --check build/x32/TYPESHLF.RSC
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TypeShelf-x32
+          path: |
+            build/x32/TYPESHLF.PRG
+            build/x32/TYPESHLF.RSC

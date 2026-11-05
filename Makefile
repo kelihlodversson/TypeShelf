@@ -3,6 +3,7 @@
 #   make test            host unit tests
 #   make                 build/m68k/TYPESHLF.PRG and TYPESHLF.RSC (keep them together)
 #   make arm             build/arm/TYPESHLF.PRG and TYPESHLF.RSC (runs on pTOS ARM)
+#   make x32             build/x32/TYPESHLF.PRG and TYPESHLF.RSC (pTOS x32)
 #   make check-x86_64    compile the sources for x32 (no link)
 #   make clean
 #
@@ -54,7 +55,7 @@ $(VERSION_H): FORCE
 	@cmp -s $@.new $@ && rm $@.new || mv $@.new $@
 
 .DEFAULT_GOAL := all
-.PHONY: all test arm check-x86_64 clean
+.PHONY: all test arm x32 check-x86_64 clean
 all: build/m68k/TYPESHLF.PRG build/m68k/TYPESHLF.RSC
 
 # ---- host unit tests ---------------------------------------------------
@@ -195,7 +196,7 @@ build/arm/TYPESHLF.PRG: $(ARM_OBJ) $(ARM_LIBGEM) $(ARM_LIBCMINI) $(ARM_CRT)
 
 arm: build/arm/TYPESHLF.PRG build/arm/TYPESHLF.RSC
 
-# ---- x86: compile only, until gemlib has a trap layer for it -----------
+# ---- x86 source portability check ------------------------------------
 
 CHECK_SRC    = $(LOGIC_SRC) $(GEM_SRC) $(GENERIC_PLATFORM_SRC)
 
@@ -216,3 +217,5 @@ check-x86_64: $(GEMLIB_H) $(VERSION_H)
 
 clean:
 	rm -rf build
+
+include mk/x32.mk
