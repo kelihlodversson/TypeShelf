@@ -70,7 +70,8 @@ void vdi(VDIPB *pb)
         for (i = 0; i < 12; i++)
             screen_ptsout[i] = pb->ptsout[i];
     }
-    if (control.code == 101 && result >= 0 && control.handle == screen_handle)
+    /* Native close clears the returned handle; invalidate by request handle. */
+    if (control.code == 101 && result >= 0 && pb->control[6] == screen_handle)
         screen_handle = 0;
     pb->control[2] = control.nptsout;
     pb->control[4] = control.nintout;

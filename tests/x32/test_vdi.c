@@ -26,8 +26,12 @@ long typeshelf_native_vdi(VDI_USER_PB *pb)
         pb->intout[1] = 799;
         return 0;
     }
-    if (pb->contrl->code == 101)
-        return fail_close ? -32 : 0;
+    if (pb->contrl->code == 101) {
+        if (fail_close)
+            return -32;
+        pb->contrl->handle = 0;          /* actual pTOS close behavior */
+        return 0;
+    }
     return -32;                         /* native vq_extnd(0) is unsupported */
 }
 
@@ -82,10 +86,14 @@ int main(void)
     CHECK_INT(native_calls, calls);
     control[0] = 101; fail_close = 0;
     vdi(&pb);
-    control[0] = 102;
+    CHECK_INT(control[6], 0);
+    control[0] = 102; control[6] = 7;     /* explicitly query the closed handle */
+    memset(intout, 0, sizeof intout);
     calls = native_calls;
     vdi(&pb);
     CHECK_INT(native_calls, calls + 1);
+    CHECK_INT(control[4], 0);
+    CHECK_INT(intout[0], 0);              /* no stale screen capabilities */
 
     calls = native_calls;
     CHECK_INT(vq_vgdos(), GDOS_UNKNOWN);
