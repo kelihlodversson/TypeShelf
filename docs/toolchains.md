@@ -45,18 +45,14 @@ The compile-only `check-x86_64` target uses host `gcc` on x86_64 Linux and
 `make x32 PTOS=../pTOS` links `build/x32/TYPESHLF.PRG` and generates its
 `TYPESHLF.RSC`. `PTOS` must point at a built pTOS source tree with
 `CONF_WITH_ELF_SHARED=y`, `CONF_WITH_LIBAES=y` and the x32 VDI enabled.
-CI pins pTOS to `7a17e6328d7f37b75592ee14cb29a0804480342c` and builds it with:
+CI pins pTOS master after the #681 libaes cutover to `9193f7c7b3773b5cd418144fc8dee6e64c5f1473` and builds it with:
 
-    make pc-x86_64-desktop-tests-builtin-cli_defconfig
-    CONFIG_= python3 - <<'PY'
-    import kconfiglib
-    config = kconfiglib.Kconfig()
-    config.load_config()
-    config.syms['CONF_WITH_ELF_SHARED'].set_value(2)
-    config.syms['CONF_WITH_LIBAES'].set_value(2)
-    config.write_config()
-    PY
+    make pc-x86_64-libaes-desktop_defconfig
     make CROSS_COMPILE= -j4
+
+This configuration uses the external shared libaes desktop with kernel AES
+disabled (`CONF_WITH_AES=n`). CI checks that the desktop links libaes and
+that the kernel contains no retired AES service entry points.
 
 The TypeShelf build uses native GCC 12 or newer and `objcopy` by default; override
 `X32_CC` and `X32_OBJCOPY` for a cross toolchain. It builds a separate x32

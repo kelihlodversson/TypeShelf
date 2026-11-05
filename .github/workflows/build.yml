@@ -71,7 +71,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: kelihlodversson/pTOS
-          ref: 7a17e6328d7f37b75592ee14cb29a0804480342c
+          ref: 9193f7c7b3773b5cd418144fc8dee6e64c5f1473
           path: build/ptos
           submodules: recursive
       - name: Install build dependencies
@@ -84,16 +84,19 @@ jobs:
         working-directory: build/ptos
         run: |
           export PATH="$GITHUB_WORKSPACE/build/venv/bin:$PATH"
-          make pc-x86_64-desktop-tests-builtin-cli_defconfig
-          CONFIG_= python3 - <<'PYCONFIG'
-          import kconfiglib
-          config = kconfiglib.Kconfig()
-          config.load_config()
-          config.syms['CONF_WITH_ELF_SHARED'].set_value(2)
-          config.syms['CONF_WITH_LIBAES'].set_value(2)
-          config.write_config()
-          PYCONFIG
+          make pc-x86_64-libaes-desktop_defconfig
           make CROSS_COMPILE= -j4
+      - name: Check that the runtime uses external libaes
+        working-directory: build/ptos
+        run: |
+          grep -qx 'CONF_WITH_LIBAES=y' .config
+          grep -qx '#define CONF_WITH_AES 0' obj/autoconf.h
+          readelf -d emudesk.prg | grep 'Shared library: \[libaes.so\]'
+          nm emutos.efi > obj/kernel.symbols
+          if grep -Eq ' [Tt] (ui_start|aes_service|aes_tree_validate)$' obj/kernel.symbols; then
+            echo 'The x32 runtime must not link kernel AES services' >&2
+            exit 1
+          fi
       - name: Build TypeShelf
         run: |
           export PATH="$GITHUB_WORKSPACE/build/venv/bin:$PATH"
