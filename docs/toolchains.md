@@ -68,4 +68,8 @@ and scalable-font inquiries. Browsing and installing fonts therefore require
 further pTOS VDI support. Rejected queries return deterministic empty results.
 CI checks linking and ELF dependencies; it does not test interactive operation.
 
+`make test-x32-adapter` runs host regression checks for native VDI failures,
+workstation capabilities and unavailable GDOS information. It needs the GEMlib
+submodule headers but no pTOS runtime, and also runs in the x32 CI job.
+
 `make check-x86_64` remains available as a compile-only portability check.

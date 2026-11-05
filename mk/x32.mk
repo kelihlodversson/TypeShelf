@@ -57,3 +57,15 @@ build/x32/TYPESHLF.PRG: $(X32_OBJ) $(X32_VDI_OBJ) $(X32_LIBCMINI) build/x32/lib/
 	    build/x32/lib/libptos-vdi.a $(X32_LIBCMINI) -o $@
 
 -include $(X32_OBJ:.o=.d) $(X32_VDI_OBJ:.o=.d)
+
+# Run the real adapter with a native-entry mock on the host. Real GEMlib
+# headers stay in use; only pTOS's pointer layout is widened for host execution.
+.PHONY: test-x32-adapter
+test-x32-adapter: build/host/test-x32-adapter
+	./build/host/test-x32-adapter
+
+build/host/test-x32-adapter: tests/x32/test_vdi.c tests/x32/vdi_user.h \
+    src/platform/x32/vdi.c src/gdosinfo/decode.h $(GEMLIB_H)
+	@mkdir -p $(dir $@)
+	$(CC_HOST) $(HOST_FLAGS) -Itests/x32 -Isrc/compat -I$(GEMLIB) \
+	    tests/x32/test_vdi.c src/platform/x32/vdi.c -o $@

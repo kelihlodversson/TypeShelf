@@ -100,6 +100,7 @@ jobs:
       - name: Build TypeShelf
         run: |
           export PATH="$GITHUB_WORKSPACE/build/venv/bin:$PATH"
+          make test-x32-adapter
           make -j4 x32 PTOS=build/ptos
       - name: Check the executable and shared library dependencies
         run: |
