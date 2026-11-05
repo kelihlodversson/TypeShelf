@@ -5,6 +5,7 @@ void test_decode(void)
 {
     char buf[80];
 
+    CHECK_STR(gdos_vgdos_name(GDOS_UNKNOWN), "unavailable");
     CHECK_STR(gdos_vgdos_name(-2L), "no GDOS");
     CHECK_STR(gdos_vgdos_name(0x5F46534DL), "FSMGDOS");
     CHECK_STR(gdos_vgdos_name(0x5F464E54L), "FONTGDOS");

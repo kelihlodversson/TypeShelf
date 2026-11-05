@@ -71,21 +71,31 @@ void draw_stipple(short vh, const Rect *r)
     vswr_mode(vh, MD_REPLACE);
 }
 
+/* Native x32 VDI currently rejects vst_alignment(). Its default is baseline
+ * alignment, so translate our top coordinates using the current font height. */
+static int text_y(short vh, int top)
+{
+    short horizontal = -1, vertical = -1;
+    short attributes[10] = { 0 };
+
+    vst_alignment(vh, 0, 5, &horizontal, &vertical);
+    if (vertical == 5)
+        return top;
+    vst_alignment(vh, 0, 0, &horizontal, &vertical);
+    vqt_attributes(vh, attributes);
+    return top + attributes[7];
+}
+
 void draw_text(short vh, int x, int y, const char *s)
 {
-    short dummy_h, dummy_v;
-
-    vst_alignment(vh, 0, 5, &dummy_h, &dummy_v);
-    v_gtext(vh, (short)x, (short)y, (char *)s);
+    v_gtext(vh, (short)x, (short)text_y(vh, y), (char *)s);
 }
 
 void draw_char16(short vh, int x, int y, int code)
 {
-    short dummy_h, dummy_v;
     short wc = (short)code;
 
-    vst_alignment(vh, 0, 5, &dummy_h, &dummy_v);
-    v_gtext16n(vh, (short)x, (short)y, &wc, 1);
+    v_gtext16n(vh, (short)x, (short)text_y(vh, y), &wc, 1);
 }
 
 int char16_width(short vh, int code)

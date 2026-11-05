@@ -40,6 +40,7 @@ are done, a final PR merges the epic branch into `main`.
     make test             host unit tests (native compiler)
     make                  build/m68k/TYPESHLF.PRG and TYPESHLF.RSC (the icons; keep them together)
     make arm              build/arm/TYPESHLF.PRG (runs on pTOS ARM, tested under QEMU virt-arm)
+    make x32 PTOS=../pTOS  build/x32/TYPESHLF.PRG and TYPESHLF.RSC
     make check-x86_64     compile the sources for x32 (no link)
     make clean
 

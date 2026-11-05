@@ -9,6 +9,7 @@
 
 #include <stddef.h>
 
+#define GDOS_UNKNOWN (-3L)     /* the platform cannot inquire about GDOS */
 #define GDOS_NONE   (-2L)       /* what vq_vgdos() returns without a GDOS */
 
 /* the GDOS vq_vgdos() reported; never NULL */

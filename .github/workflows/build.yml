@@ -61,16 +61,58 @@ jobs:
             build/arm/TYPESHLF.PRG
             build/arm/TYPESHLF.RSC
 
-  check-x86_64:
-    name: Compile for x32
-    runs-on: ubuntu-latest
+  x32:
+    name: Build for pTOS x32
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install the x32 toolchain
+      - uses: actions/checkout@v4
+        with:
+          repository: kelihlodversson/pTOS
+          ref: 9193f7c7b3773b5cd418144fc8dee6e64c5f1473
+          path: build/ptos
+          submodules: recursive
+      - name: Install build dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y gcc gcc-multilib libc6-dev-x32
-      - name: Compile
-        run: make check-x86_64
+          sudo apt-get install -y gcc binutils rsync python3-venv
+          python3 -m venv build/venv
+          build/venv/bin/pip install kconfiglib
+      - name: Build the pTOS shared runtime
+        working-directory: build/ptos
+        run: |
+          export PATH="$GITHUB_WORKSPACE/build/venv/bin:$PATH"
+          make pc-x86_64-libaes-desktop_defconfig
+          make CROSS_COMPILE= -j4
+      - name: Check that the runtime uses external libaes
+        working-directory: build/ptos
+        run: |
+          grep -qx 'CONF_WITH_LIBAES=y' .config
+          grep -qx '#define CONF_WITH_AES 0' obj/autoconf.h
+          readelf -d emudesk.prg | grep 'Shared library: \[libaes.so\]'
+          nm emutos.efi > obj/kernel.symbols
+          if grep -Eq ' [Tt] (ui_start|aes_service|aes_tree_validate)$' obj/kernel.symbols; then
+            echo 'The x32 runtime must not link kernel AES services' >&2
+            exit 1
+          fi
+      - name: Build TypeShelf
+        run: |
+          export PATH="$GITHUB_WORKSPACE/build/venv/bin:$PATH"
+          make test-x32-adapter
+          make -j4 x32 PTOS=build/ptos
+      - name: Check the executable and shared library dependencies
+        run: |
+          readelf -h build/x32/TYPESHLF.PRG | grep 'ELF32'
+          readelf -h build/x32/TYPESHLF.PRG | grep 'Advanced Micro Devices X86-64'
+          readelf -l build/x32/TYPESHLF.PRG | grep '/GEMSYS/LIB/X32/LD.SO'
+          readelf -d build/x32/TYPESHLF.PRG | grep 'Shared library: \[libaes.so\]'
+          readelf -d build/x32/TYPESHLF.PRG | grep 'Shared library: \[libptos.so\]'
+          python3 tools/mkrsc.py --check build/x32/TYPESHLF.RSC
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TypeShelf-x32
+          path: |
+            build/x32/TYPESHLF.PRG
+            build/x32/TYPESHLF.RSC

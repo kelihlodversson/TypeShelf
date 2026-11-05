@@ -7,8 +7,8 @@ installs new scalable fonts, and reports which OS and VDI/GDOS the machine has.
 It runs on m68k (TOS, EmuTOS and [pTOS](https://github.com/kelihlodversson/pTOS)) and on pTOS for
 ARM (tested under QEMU `virt-arm`), and works from 320x200 (ST low) up.  It is built with
 [gemlib](https://github.com/kelihlodversson/gemlib) and
-[libcmini](https://github.com/kelihlodversson/libcmini); for x86 the sources are only compile-checked
-(x32), until pTOS can run a GEM application there.  The design is in
+[libcmini](https://github.com/kelihlodversson/libcmini). An experimental x32 target links against
+pTOS’s shared AES and runtime libraries; font browsing needs further pTOS VDI support.  The design is in
 [docs/superpowers/specs/2026-10-20-typeshelf-design.md](docs/superpowers/specs/2026-10-20-typeshelf-design.md).
 
 Run `TYPESHLF.PRG` with `TYPESHLF.RSC` (the toolbar's icons) in the same folder.
@@ -53,11 +53,16 @@ Not done: search, removing fonts, printing, and installing bitmap fonts.
     make test             host unit tests (native compiler)
     make                  build/m68k/TYPESHLF.PRG and TYPESHLF.RSC (keep them together)
     make arm              build/arm/TYPESHLF.PRG and TYPESHLF.RSC
+    make x32 PTOS=../pTOS  build/x32/TYPESHLF.PRG and TYPESHLF.RSC
     make check-x86_64     compile the sources for x32 (no link)
 
 On macOS use `gmake`.  It needs the submodules (`git submodule update --init`), python3 and rsync,
 and the toolchains in [docs/toolchains.md](docs/toolchains.md).  `make VERSION=1.2.3` sets the
 version About shows (`dev` otherwise).
+
+The x32 build needs a configured pTOS build with its shared runtime and AES enabled.
+See [docs/toolchains.md](docs/toolchains.md#x32-ptos) for setup and runtime limitations.
+CI uploads the x32 program and resource as `TypeShelf-x32`; release zips remain m68k and ARM.
 
 ## Releases
 

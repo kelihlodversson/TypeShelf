@@ -5,6 +5,7 @@
 const char *gdos_vgdos_name(long value)
 {
     switch (value) {
+    case GDOS_UNKNOWN:  return "unavailable";
     case GDOS_NONE:     return "no GDOS";
     case 0x0007E88AL:   return "Atari GDOS 1.1";
     case 0x0007E864L:   return "AMC-GDOS";

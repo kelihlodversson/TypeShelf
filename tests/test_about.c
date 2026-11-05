@@ -1,6 +1,7 @@
 #include <string.h>
 #include "test.h"
 #include "gdosinfo/about.h"
+#include "gdosinfo/decode.h"
 
 void test_about(void)
 {
@@ -47,6 +48,10 @@ void test_about(void)
             all_fit = 0;
     CHECK(all_fit);
     CHECK((ABOUT_WIDTH + 2 * ABOUT_PAD) * 8 + 8 <= 320);    /* the dialog and its outline fit an ST-LOW screen */
+
+    f.vgdos = GDOS_UNKNOWN;                       /* the x32 inquiry is unavailable */
+    about_format(&f, lines);
+    CHECK_STR(lines[4], "GDOS:   unavailable");
 
     /* a plain ST: no cookies, 16 colours, one family */
     memset(&f, 0, sizeof f);
