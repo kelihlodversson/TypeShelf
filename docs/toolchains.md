@@ -45,14 +45,23 @@ The compile-only `check-x86_64` target uses host `gcc` on x86_64 Linux and
 `make x32 PTOS=../pTOS` links `build/x32/TYPESHLF.PRG` and generates its
 `TYPESHLF.RSC`. `PTOS` must point at a built pTOS source tree with
 `CONF_WITH_ELF_SHARED=y`, `CONF_WITH_LIBAES=y` and the x32 VDI enabled.
-CI pins pTOS master after the #681 libaes cutover to `9193f7c7b3773b5cd418144fc8dee6e64c5f1473` and builds it with:
+CI pins the coordinated pTOS #955 runtime to
+`41e77f9d8bd1215207c511ebb318ada3eb1d6018`. Initialize pTOS's submodules
+before building:
 
+    git submodule update --init --recursive
     make pc-x86_64-libaes-desktop_defconfig
     make CROSS_COMPILE= -j4
 
 This configuration uses the external shared libaes desktop with kernel AES
 disabled (`CONF_WITH_AES=n`). CI checks that the desktop links libaes and
 that the kernel contains no retired AES service entry points.
+
+The build also requires `obj/gemlib/libgem.a` from that pTOS tree. It supplies
+the classic AES bindings and TypeShelf's own `aes_global`, `gl_apid` and
+`gl_ap_version`; `libaes.so` now exports the `mt_*` implementations. The archive
+must precede `-laes` in the link. Older pTOS builds with the classic bindings
+inside `libaes.so` do not provide this interface.
 
 The TypeShelf build uses native GCC 12 or newer and `objcopy` by default; override
 `X32_CC` and `X32_OBJCOPY` for a cross toolchain. It builds a separate x32
@@ -66,7 +75,25 @@ The x32 target is experimental: the pinned pTOS VDI client does not yet
 implement the font-name and metric queries TypeShelf needs, or font loading
 and scalable-font inquiries. Browsing and installing fonts therefore require
 further pTOS VDI support. Rejected queries return deterministic empty results.
-CI checks linking and ELF dependencies; it does not test interactive operation.
+CI checks linking, ELF dependencies and ownership of the AES bindings, then
+boots TypeShelf, sends view/window shortcuts and checks its clean exit. This
+smoke test does not verify font browsing or installation.
+
+To run the same GUI smoke test, install QEMU, OVMF, mtools and dosfstools, then
+build pTOS's test desktop instead of the normal configuration above:
+
+    cd ../pTOS
+    make pc-x86_64-desktop-tests-builtin-cli_defconfig
+    make CROSS_COMPILE= -j4
+    make CROSS_COMPILE= -j4 x32-desktop-test
+    cd ../TypeShelf
+    make x32 PTOS=../pTOS
+    python3 tests/emulator/x32.py --ptos ../pTOS \
+        --ovmf-code /usr/share/OVMF/OVMF_CODE_4M.fd \
+        --ovmf-vars /usr/share/OVMF/OVMF_VARS_4M.fd
+
+Screenshots and the guest log are saved under `build/emulator/x32/`. Override
+the firmware paths or pass `--qemu` for another installation.
 
 `make test-x32-adapter` runs host regression checks for native VDI failures,
 workstation capabilities and unavailable GDOS information. It needs the GEMlib
