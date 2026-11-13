@@ -28,6 +28,10 @@ def main():
     args = parser.parse_args()
     args.ptos = args.ptos.resolve()
     args.output = args.output.resolve()
+    args.ovmf_code = str(Path(args.ovmf_code).resolve())
+    args.ovmf_vars = str(Path(args.ovmf_vars).resolve())
+    if os.path.dirname(args.qemu):
+        args.qemu = str(Path(args.qemu).resolve())
     args.embedded_console = True
     spec = importlib.util.spec_from_file_location(
         "ptos_desktop", args.ptos / "tests/x32_desktop/run.py")
@@ -55,14 +59,15 @@ def main():
         time.sleep(0.25)
         guest.move(135, 44)
         guest.click()
-        text = guest.wait("x32 desktop program TARGET")
-        point = re.findall(r"x32 desktop program TARGET (\d+) (\d+)", text)[-1]
+        target_record = r"x32 desktop program TARGET (\d+) (\d+)\r?\n"
+        text = guest.wait(target_record, regex=True)
+        point = re.findall(target_record, text)[-1]
         guest.move(*map(int, point))
         guest.click()
         guest.key("ctrl-o")
-        text = guest.wait(r"x32 desktop LAUNCH (\d+) (?:C:\\)?APPTEST.PRG",
-                          regex=True)
-        pid = re.findall(r"x32 desktop LAUNCH (\d+) (?:C:\\)?APPTEST.PRG", text)[-1]
+        launch_record = r"x32 desktop LAUNCH (\d+) (?:C:\\)?APPTEST\.PRG\r?\n"
+        text = guest.wait(launch_record, regex=True)
+        pid = re.findall(launch_record, text)[-1]
         exited = "x32 desktop CH_EXIT " + pid + " "
         time.sleep(3)
         assert exited not in guest.text(), "TypeShelf exited during startup"
