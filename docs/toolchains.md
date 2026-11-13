@@ -33,7 +33,7 @@ python3 -m pip install kconfiglib==14.1.0
 Build with the SDK prefixes (local legacy compiler defaults remain supported):
 
 ```sh
-make m68k M68K_PREFIX=m68k-unknown-ptos-prgelf- M68K_LDFLAGS=-mmintelf
+make all M68K_PREFIX=m68k-unknown-ptos-prgelf- M68K_LDFLAGS=-mmintelf
 make arm ARM_PREFIX=arm-unknown-ptos-elf-
 make x32 PTOS=/path/to/built/pTOS X32_PREFIX=x86_64-unknown-ptos-elfx32-
 ```

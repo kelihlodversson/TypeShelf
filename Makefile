@@ -93,6 +93,8 @@ M68K_PREFIX ?= m68k-atari-mintelf-
 M68K_CC      = $(M68K_PREFIX)gcc
 # The pTOS SDK defaults to ELF; CI selects -mmintelf for GEMDOS PRG output.
 M68K_LDFLAGS ?=
+# Only libcmini-based SDK builds need the GEMlib/MiNTLib declaration shim.
+M68K_CPPFLAGS ?= $(if $(findstring -ptos-prgelf-,$(M68K_PREFIX)),-I$(abspath src/compat))
 
 GEMLIB_H     = $(GEMLIB)/mt_gem.h
 GEMLIB_A     = $(GEMLIB)/.lib68000/libgem.a
@@ -101,12 +103,14 @@ LIBCMINI_CRT = build/m68k/lib/crt0.o
 
 # gemlib's headers are generated from mt_gem.h.in
 $(GEMLIB_H):
-	$(MAKE) -C $(GEMLIB) mt_gem.h
+	$(MAKE) -C $(GEMLIB) \
+	    CC='$(if $(filter arm,$(MAKECMDGOALS)),$(ARM_CC),$(if $(filter x32 test-x32-adapter check-x86_64,$(MAKECMDGOALS)),$(X32_CC),$(M68K_CC)))' mt_gem.h
 
 # gemlib does its own dependency checking, so ask it on every build; it leaves
 # the archive alone (and so does not relink) when nothing changed.
 $(GEMLIB_A): $(GEMLIB_H) FORCE
-	$(MAKE) -C $(GEMLIB) CROSS_TOOL=$(patsubst %-,%,$(M68K_PREFIX)) .lib68000/libgem.a
+	$(MAKE) -C $(GEMLIB) CROSS_TOOL=$(patsubst %-,%,$(M68K_PREFIX)) \
+	    INCLUDES="-I. $(M68K_CPPFLAGS)" .lib68000/libgem.a
 
 # libcmini keeps one build/ directory and one .config for every target, so each
 # target builds in its own copy of it (a parallel `make all arm` cannot make the
@@ -141,7 +145,7 @@ $(LIBCMINI_CRT): $(LIBCMINI_A)
 
 # ---- m68k --------------------------------------------------------------
 
-M68K_CFLAGS = $(STD) $(WARN) -O2 -m68000 -fomit-frame-pointer $(INCLUDES)
+M68K_CFLAGS = $(STD) $(WARN) -O2 -m68000 -fomit-frame-pointer $(M68K_CPPFLAGS) $(INCLUDES)
 M68K_SRC    = $(LOGIC_SRC) $(GEM_SRC) $(M68K_PLATFORM_SRC)
 M68K_OBJ    = $(patsubst src/%.c,build/m68k/%.o,$(M68K_SRC))
 
