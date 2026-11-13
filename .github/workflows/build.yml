@@ -71,21 +71,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: kelihlodversson/pTOS
-          ref: 9193f7c7b3773b5cd418144fc8dee6e64c5f1473
+          ref: 41e77f9d8bd1215207c511ebb318ada3eb1d6018
           path: build/ptos
           submodules: recursive
       - name: Install build dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y gcc binutils rsync python3-venv
+          sudo apt-get install -y gcc binutils rsync python3-venv qemu-system-x86 ovmf dosfstools mtools
           python3 -m venv build/venv
           build/venv/bin/pip install kconfiglib
       - name: Build the pTOS shared runtime
         working-directory: build/ptos
         run: |
           export PATH="$GITHUB_WORKSPACE/build/venv/bin:$PATH"
-          make pc-x86_64-libaes-desktop_defconfig
+          make pc-x86_64-desktop-tests-builtin-cli_defconfig
           make CROSS_COMPILE= -j4
+          make CROSS_COMPILE= -j4 x32-desktop-test
       - name: Check that the runtime uses external libaes
         working-directory: build/ptos
         run: |
@@ -110,9 +111,22 @@ jobs:
           readelf -d build/x32/TYPESHLF.PRG | grep 'Shared library: \[libaes.so\]'
           readelf -d build/x32/TYPESHLF.PRG | grep 'Shared library: \[libptos.so\]'
           python3 tools/mkrsc.py --check build/x32/TYPESHLF.RSC
+          python3 build/ptos/tools/check-libaes-elf.py \
+            build/ptos/obj/libaes/libaes.so build/ptos/obj/gemlib/libgem.a \
+            build/x32/TYPESHLF.PRG
+      - name: Exercise TypeShelf on the native desktop
+        run: |
+          python3 tests/emulator/x32.py --ptos build/ptos \
+            --ovmf-code /usr/share/OVMF/OVMF_CODE_4M.fd \
+            --ovmf-vars /usr/share/OVMF/OVMF_VARS_4M.fd
       - uses: actions/upload-artifact@v4
         with:
           name: TypeShelf-x32
           path: |
             build/x32/TYPESHLF.PRG
             build/x32/TYPESHLF.RSC
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: TypeShelf-x32-gui-test
+          path: build/emulator/x32/
