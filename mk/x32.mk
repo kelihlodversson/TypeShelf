@@ -54,7 +54,7 @@ build/x32/TYPESHLF.PRG: $(X32_OBJ) $(X32_VDI_OBJ) $(X32_LIBCMINI) build/x32/lib/
 	    -Wl,--hash-style=sysv,-z,now,-z,noexecstack,-e,_start \
 	    -Wl,--dynamic-linker,/GEMSYS/LIB/X32/LD.SO,-Ttext-segment=0x400000 \
 	    $(PTOS)/obj/ldso/dyncrt.o $(X32_OBJ) $(X32_VDI_OBJ) \
-    $(PTOS)/obj/gemlib/libgem.a \
+	    $(PTOS)/obj/gemlib/libgem.a \
 	    -L$(PTOS)/obj/libaes -laes -L$(PTOS)/obj/ldso -lptos \
 	    build/x32/lib/libptos-vdi.a $(X32_LIBCMINI) -o $@
 
