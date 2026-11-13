@@ -1,8 +1,51 @@
 # Toolchains
 
-Type Shelf needs a cross toolchain per target. The pTOS repository has the
-full, tested instructions, including installing without sudo:
-<https://github.com/kelihlodversson/pTOS/blob/master/.claude/skills/toolchain-install/SKILL.md>
+## CI: pinned official pTOS SDKs
+
+TypeShelf CI uses the official **0.2.0** pTOS SDK packages on Ubuntu 24.04,
+installed by [the local setup action](../.github/actions/setup-ptos/action.yml).
+The build and release workflows share that action, so compiler versions, Python
+setup and ABI choices do not drift. Each cross-build installs only its SDK;
+host unit tests continue to use the system compiler.
+
+The action uses `https://apt.ptos.dev` with a dedicated `signed-by` keyring and
+an exact package version. Since Pages retains a bounded set of recent versions,
+a pin that has left APT is downloaded from the permanent GitHub Release archive,
+verified against its SHA256SUMS, then installed with APT for host dependencies.
+SDK downloads are public and need no production credentials or additional token.
+SDKs are never compiled in these workflows. To change the pin, update the action's
+version default and validate all targets, including the x32 emulator job.
+
+To install all SDKs locally on Ubuntu 24.04/26.04 amd64:
+
+```sh
+curl -fsSL https://apt.ptos.dev/ptos-archive-keyring.gpg |
+  sudo tee /usr/share/keyrings/ptos-archive-keyring.gpg >/dev/null
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/ptos-archive-keyring.gpg] https://apt.ptos.dev stable main' |
+  sudo tee /etc/apt/sources.list.d/ptos.list
+sudo apt update
+sudo apt install ptos-toolchain=0.2.0
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install kconfiglib==14.1.0
+```
+
+Build with the SDK prefixes (local legacy compiler defaults remain supported):
+
+```sh
+make m68k M68K_PREFIX=m68k-unknown-ptos-prgelf- M68K_LDFLAGS=-mmintelf
+make arm ARM_PREFIX=arm-unknown-ptos-elf-
+make x32 PTOS=/path/to/built/pTOS X32_PREFIX=x86_64-unknown-ptos-elfx32-
+```
+
+`-mmintelf` keeps the m68k output a GEMDOS PRG/ELF hybrid rather than the SDK's
+default plain ELF. The selected prefixes are forwarded to pinned libcmini and
+GEMlib submodule builds, preserving the projects' own library configurations.
+The x32 CI fixture keeps its existing pinned pTOS commit and Ubuntu 24.04/QEMU/
+OVMF combination; it now passes the SDK prefix for the runtime and kernel too.
+GUI, shared-library dependency checks and artifacts are retained.
+
+The legacy alternatives below describe the local defaults, not CI installation.
 
 ## m68k (the real target)
 
@@ -10,7 +53,7 @@ The `m68k-atari-mintelf-` toolchain. It links a hybrid executable: a GEMDOS PRG
 that is also an ELF, so the same `TYPESHLF.PRG` loads on real TOS, EmuTOS and
 pTOS.
 
-Ubuntu (this is what CI does):
+Legacy Ubuntu toolchain (not used by CI):
 
     sudo add-apt-repository -y ppa:vriviere/mintelf
     sudo apt-get update
@@ -22,9 +65,8 @@ macOS: Thorsten Otto's archives from <https://tho-otto.m68k.eu/crossmint.php>
 
     export PATH=/opt/cross-mint/bin:$PATH
 
-libcmini's configuration also needs Python 3 and kconfiglib:
-
-    pip3 install kconfiglib
+libcmini's configuration also needs Python 3 and kconfiglib in an active
+virtual environment, as shown above.
 
 ## ARM (runs on pTOS ARM)
 
@@ -51,7 +93,7 @@ before building:
 
     git submodule update --init --recursive
     make pc-x86_64-libaes-desktop_defconfig
-    make CROSS_COMPILE= -j4
+    make CROSS_COMPILE=x86_64-unknown-ptos-elfx32- -j4
 
 This configuration uses the external shared libaes desktop with kernel AES
 disabled (`CONF_WITH_AES=n`). CI checks that the desktop links libaes and
@@ -63,8 +105,9 @@ the classic AES bindings and TypeShelf's own `aes_global`, `gl_apid` and
 must precede `-laes` in the link. Older pTOS builds with the classic bindings
 inside `libaes.so` do not provide this interface.
 
-The TypeShelf build uses native GCC 12 or newer and `objcopy` by default; override
-`X32_CC` and `X32_OBJCOPY` for a cross toolchain. It builds a separate x32
+CI uses the pTOS SDK for the application, shared runtime and EFI kernel.
+The local default remains native GCC 12 or newer and `objcopy`; set
+`X32_PREFIX=x86_64-unknown-ptos-elfx32-` to use the SDK for the application. It builds a separate x32
 copy of libcmini, so m68k, ARM and x32 builds can run in parallel.
 
 Install the matching pTOS runtime (`LD.SO`, `libptos.so`, `libaes.so`) in
@@ -84,8 +127,8 @@ build pTOS's test desktop instead of the normal configuration above:
 
     cd ../pTOS
     make pc-x86_64-desktop-tests-builtin-cli_defconfig
-    make CROSS_COMPILE= -j4
-    make CROSS_COMPILE= -j4 x32-desktop-test
+    make CROSS_COMPILE=x86_64-unknown-ptos-elfx32- -j4
+    make CROSS_COMPILE=x86_64-unknown-ptos-elfx32- -j4 x32-desktop-test
     cd ../TypeShelf
     make x32 PTOS=../pTOS
     python3 tests/emulator/x32.py --ptos ../pTOS \
