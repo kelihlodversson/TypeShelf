@@ -1,8 +1,9 @@
 # Native pTOS ILP32 programs using the shared CRT and AES library.
 # PTOS provides the shared runtime and caller-owned GEMlib AES bindings.
 PTOS ?= ../pTOS
-X32_CC ?= gcc
-X32_OBJCOPY ?= objcopy
+X32_PREFIX ?=
+X32_CC ?= $(X32_PREFIX)gcc
+X32_OBJCOPY ?= $(X32_PREFIX)objcopy
 X32_CFLAGS = $(STD) $(WARN) -Os -mx32 -ffreestanding \
     -fPIC -fvisibility=hidden -fno-stack-protector -fno-builtin \
     -Isrc/compat -Isrc -Ibuild -I$(GEMLIB) -I$(LIBCMINI)/include -MMD -MP
@@ -42,8 +43,8 @@ $(X32_LIBCMINI): $(LIBCMINI_REV)
 	rm -rf build/x32/libcmini
 	mkdir -p build/x32/libcmini $(dir $@)
 	$(LIBCMINI_COPY) build/x32/libcmini/
-	$(MAKE) -C build/x32/libcmini ptos_x86_64_defconfig
-	$(MAKE) -C build/x32/libcmini CROSSPREFIX= CC='$(X32_CC)' \
+	$(MAKE) -C build/x32/libcmini CROSSPREFIX=$(X32_PREFIX) CC='$(X32_CC)' ptos_x86_64_defconfig
+	$(MAKE) -C build/x32/libcmini CROSSPREFIX=$(X32_PREFIX) CC='$(X32_CC)' \
 	    ARCH_CFLAGS='-fPIC -fvisibility=hidden -fno-stack-protector' dirs libs
 	cp build/x32/libcmini/build/libcmini.a $@
 
